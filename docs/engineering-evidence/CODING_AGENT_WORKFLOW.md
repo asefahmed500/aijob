@@ -58,4 +58,8 @@ Real files and operations:
 - Produced the unit tests and the HTTP verification script, then used their failures to locate two real defects (validator semantics and module wiring).
 - Documented each step in Markdown as it happened, so the evidence record is traceable to commits and commands.
 
+### Final expansion pass
+
+The same A–F cycle was repeated for the six-feature expansion: the user chose the feature set, the agent extended the schema and modules, wrote `verify-expansion.ts`, found and fixed three real defects (Promise serialization, a blocked destructive Prisma push, and a bad import), then verified 18 unit tests, a passing end-to-end script, 17 build routes and HTTP 200 on all new pages.
+
 No time savings or performance metrics are claimed. Only concrete actions are listed.

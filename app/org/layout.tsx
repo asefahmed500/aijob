@@ -50,6 +50,8 @@ export default function OrgLayout({ children }: { children: React.ReactNode }) {
             <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href="/org">Overview</Link>
             <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href="/org/jobs">Jobs</Link>
             <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href="/org/candidates">Candidates</Link>
+            <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href="/org/analytics">Analytics</Link>
+            <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href="/org/team">Team</Link>
             <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href="/dashboard">My applications</Link>
           </div>
           {memberships.length > 0 ? (

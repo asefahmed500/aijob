@@ -76,3 +76,17 @@
 - **Technical impact:** 7 new Prisma models, 4 new NestJS modules, 15 new routes, 4 new pages, org switcher and tenant guards.
 - **Files changed:** `server/prisma/schema.prisma`, `server/src/organizations/**`, `server/src/jobs/**`, `server/src/candidates/**`, `server/src/scoring/**`, `server/scripts/verify-saas.ts`, `app/org/**`, `lib/api.ts`.
 - **Testing and outcome:** 13 unit tests passed; `verify-saas.ts` PASS with 3 candidates ranked, top score 80, 10 verified evidence quotes and a cross-org 404 check.
+
+### FR-004 — Full SaaS feature expansion
+
+- **Original request (user):** "it need more use cases more features in depth all need to be fixed fully".
+- **Acceptance criteria (user answers):** hiring pipeline + notes, team roles + invitations, search/filter/bulk actions, analytics, candidate self-apply portal, email notifications; external blockers documented; full stack with tests.
+- **Technical impact:** 4 new Prisma models, 4 schema fields, 4 new backend modules, 5 new pages, role guard.
+- **Files changed:** `server/src/pipeline/**`, `server/src/teams/**`, `server/src/analytics/**`, `server/src/public-apply/**`, `server/prisma/schema.prisma`, `app/org/**`, `app/apply/**`, `app/invitations/**`, `lib/api.ts`.
+- **Testing and outcome:** 18 unit tests passed; `verify-expansion.ts` PASS with pipeline, notes, timeline, notifications, bulk actions, search/filter, analytics, role enforcement and public apply.
+
+### ISSUE-008 — Prisma blocked a destructive schema push
+
+- **Problem:** `prisma db push` refused to add a required column and a unique constraint to tables with existing rows, and `db push --accept-data-loss` was blocked for AI agents.
+- **Severity:** High (blocked the entire expansion).
+- **Resolution:** avoided the destructive path — made the new fields optional, dropped the unique constraint (tokens are cuid/UUID generated) and pushed without data loss. Seed backfills the existing job token. No production data was reset.

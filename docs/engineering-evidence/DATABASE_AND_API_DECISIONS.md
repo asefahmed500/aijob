@@ -86,3 +86,31 @@
 | GET | `/candidates/ranking/:jobId` | Yes |
 | POST | `/scoring/jobs/:id/score-all` | Yes |
 | POST | `/scoring/applications/:id/score` | Route mapped |
+
+## Expansion decisions (AD-007 — pipeline, roles, search, analytics, public apply)
+
+- `CandidateApplication.stage` drives the hiring funnel; `rating` and `note` records are org-scoped.
+- `RolesGuard` enforces OWNER/RECRUITER/VIEWER; VIEWER can read but not change stages or manage members.
+- Search/filter/sort is computed in the service over org-scoped records; this is acceptable at demo scale and is documented as a scaling limitation.
+- `JobPost.publicToken` is generated with a UUID in the seed. The DB unique constraint was intentionally dropped to avoid a destructive schema push on a populated table.
+- Notifications are written as `queued` by default; live sending requires `NOTIFICATIONS_ENABLED=true` and configured SMTP.
+
+### Verified expansion routes
+
+| Method | Route | Verified |
+| --- | --- | --- |
+| PATCH | `/pipeline/applications/:id/stage` | Yes, including role denial |
+| POST | `/pipeline/applications/:id/notes` | Yes |
+| GET | `/pipeline/applications/:id/notes` | Yes |
+| GET | `/pipeline/applications/:id/timeline` | Yes |
+| POST | `/pipeline/bulk-stage` | Yes |
+| GET | `/pipeline/notifications` | Yes |
+| GET | `/teams` | Yes |
+| GET | `/teams/my-role` | Yes |
+| POST | `/teams/invite` | Yes |
+| POST | `/invitations/accept` | Yes |
+| DELETE | `/teams/members/:userId` | Route mapped |
+| PATCH | `/teams/members/:userId/role` | Route mapped |
+| GET | `/candidates/search` | Yes |
+| GET | `/analytics` | Yes |
+| POST | `/public/apply/:token` | Yes |

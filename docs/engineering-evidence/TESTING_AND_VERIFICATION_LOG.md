@@ -115,3 +115,19 @@ Assertions performed by the script:
 | HTTP smoke test on port 3003 | `/`, `/org`, `/org/jobs`, `/org/candidates`, `/org/jobs/demo` all returned 200 |
 
 SaaS verification assertions: login, organization switch, seeded job and candidates present, score-all produces scores, ranking sorted descending, every evidence quote is a substring of the candidate resume at the stored offsets, and a second user in a different organization cannot list or read the first organization's job.
+
+## 2026-11-20 — Full feature expansion
+
+| Command / check | Actual result |
+| --- | --- |
+| `npx prisma db push` (after new models) | "Your database is now in sync with your Prisma schema. Done in 157ms" |
+| `npx prisma db push --accept-data-loss` | Blocked for AI agents; not executed. Avoided by schema change instead |
+| `npx ts-node prisma/seed.ts` | Seed complete with backfilled public apply token |
+| `npm test -- --runInBand` | 5 suites, 18 tests passed |
+| `npx ts-node scripts/verify-expansion.ts` | `PASS`: pipeline, 3 notes, 8 timeline events, 2 bulk updates, 1 search result, 2 stage-filtered rows, analytics totals, all three roles enforced, public apply PASS |
+| `npm run build` (backend) | Success |
+| `npm run build` (frontend, first attempt) | Failed: wrong `Textarea` import |
+| `npm run build` (frontend, after fix) | Success; 17 routes listed |
+| HTTP smoke test on port 3001 | 10 routes returned 200, including `/apply/demo` and `/invitations/demo` |
+
+Expansion assertions: stage change sets stage and rating; note and timeline events are persisted; notification log is written; bulk stage changes apply to two candidates; text search and stage filter return correct rows; analytics counts and average score are non-zero; RECRUITER can change stage; VIEWER receives 403 on a stage change; public apply creates an application without authentication.

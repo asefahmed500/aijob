@@ -73,6 +73,23 @@ All entries describe work performed in this session. The user supplied requireme
 
 **Agent acceleration:** the agent produced the schema, guards, four modules and four pages from the agreed tenancy rule, then verified isolation automatically rather than requiring manual cross-user checks.
 
+## CS-05 — Six full-stack SaaS features in one expansion
+
+1. **What the user requested:** more use cases and features in depth, with all remaining gaps fixed; full stack with tests.
+2. **Codebase before:** org-scoped jobs/candidates/ranking existed, but no pipeline, roles, search, analytics, public apply or notifications.
+3. **Investigation:** reviewed the existing Prisma schema and org guard; chose to extend them rather than create a second authorization system.
+4. **Plan:** four new backend modules, two new guards/decorators, five new pages, one verification script covering all six features.
+5. **Agent implemented:** pipeline with notes/timeline/notification queue, RolesGuard with invitations, candidate search, analytics, public apply form flow, and the corresponding shadcn pages.
+6. **Backend files:** `server/src/pipeline/*`, `server/src/teams/*`, `server/src/analytics/*`, `server/src/public-apply/*`, `server/src/organizations/roles.ts`, schema changes.
+7. **Database/API:** 4 new models and 4 fields; 15 new routes.
+8. **Problems:** Prisma refused a destructive push and blocked the agent from forcing it; two methods returned unresolved Promises; a page imported `Textarea` from the wrong module.
+9. **Resolution:** changed the schema to avoid data loss instead of resetting; awaited the promises; corrected the import.
+10. **Review:** build/test/HTTP verification feedback; no user line-by-line review or PR.
+11. **Tests:** 18 unit tests; `verify-expansion.ts` PASS.
+12. **Verified:** stages, notes, timeline, queued notifications, bulk moves, search/filter, analytics, 403 denial for VIEWER, and public application creation.
+
+**Agent acceleration:** the agent generated the modules, DTOs, guards, pages and verification script from one agreed feature list, then used the script to prove each feature rather than relying on manual clicking.
+
 ## Project selection reasoning
 
 CS-01 was selected over the larger auth or frontend work because it contains the product's defining constraint (no invented evidence), an external integration that actually failed, a labelled fallback, and automated verification of both properties. The frontend has more files but no comparable trust-critical logic.

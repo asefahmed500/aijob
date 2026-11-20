@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { api, type JobDetail, type RankingEntry } from "@/lib/api";
-import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -57,9 +58,16 @@ export default function JobRankingPage({ params }: Props) {
             <h1 className="text-2xl font-semibold tracking-tight">{job?.title ?? "Job"}</h1>
             <p className="text-sm text-muted-foreground">Candidates ranked by quoted resume evidence.</p>
           </div>
-          <Button onClick={scoreAll} disabled={busy || ranking.length === 0}>
-            {busy ? "Scoring…" : "Score all candidates"}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={scoreAll} disabled={busy || ranking.length === 0}>
+              {busy ? "Scoring…" : "Score all candidates"}
+            </Button>
+            {job?.publicToken ? (
+              <Link className={buttonVariants({ variant: "outline" })} href={`/apply/${job.publicToken}`}>
+                Public apply link
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         {error ? <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
@@ -83,11 +91,15 @@ export default function JobRankingPage({ params }: Props) {
                 <CardTitle className="text-base">
                   #{index + 1} {entry.candidate.name}
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Badge variant={entry.score && entry.score.score >= 60 ? "default" : "secondary"}>
                     {entry.score ? `${entry.score.score}%` : "not scored"}
                   </Badge>
                   {entry.score ? <Badge variant="outline">{entry.score.source}</Badge> : null}
+                  <Badge variant="outline">{entry.status}</Badge>
+                  <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href={`/org/candidates/${entry.candidate.id}`}>
+                    Open
+                  </Link>
                 </div>
               </div>
               <CardDescription>{entry.candidate.email} · {entry.status}</CardDescription>

@@ -82,3 +82,16 @@ Only application bugs and genuine implementation problems are recorded. Tooling 
 - **Root cause:** `app/org/layout.tsx` used `usePathname()` only as a `useEffect` dependency to refresh the active organization; the value is runtime-only.
 - **Fix (agent):** removed `usePathname` and its dependency; the switcher refreshes explicitly after a switch.
 - **Verification:** `npm run build` succeeded and listed `/org`, `/org/jobs`, `/org/candidates`, `/org/jobs/[id]`.
+
+## BUG-011 — Unresolved Promises serialized as empty objects
+
+- **Symptom:** `GET /teams/my-role` returned `{"role":{}}` instead of a role string. `GET /teams` would have returned empty `members` and `invitations`.
+- **Root cause:** `TeamsService.list()` placed Prisma Promises inside an object literal, and `TeamsController.myRole()` wrapped the async `currentRole()` call in an object without awaiting it.
+- **Fix (agent):** made both methods `async` and awaited the promises.
+- **Verification:** `verify-expansion.ts` now receives `"RECRUITER"` and role-enforcement checks pass.
+
+## BUG-012 — Wrong Textarea import path
+
+- **Symptom:** `next build` failed: `Export Textarea doesn't exist in target module components/ui/input.tsx`.
+- **Fix (agent):** imported `Textarea` from `components/ui/textarea` instead.
+- **Verification:** `npm run build` succeeded with 17 routes.

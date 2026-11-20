@@ -93,3 +93,23 @@ Chronological record of real development activities. "Requested / decided / revi
 - **End-to-end (agent):** `server/scripts/verify-saas.ts` returned `PASS`: 3 ranked candidates, top score 80, 10 evidence quotes verified against resumes with correct offsets, and a cross-organization isolation check that returned 404 for a foreign job.
 - **Verification:** backend build passed, frontend production build listed all ten routes, new `/org*` routes returned HTTP 200 on the dev server.
 - **Limitations:** AI scoring used the deterministic path because the Z.ai key has no balance; no recruitment workflow states beyond `new`; no invitations or role management UI.
+
+## E-011 — Full SaaS feature expansion (six use cases, full stack)
+
+- **Original request (user):** "it need more use cases more features in depth all need to be fixed fully".
+- **Clarifications answered by user:** build hiring pipeline + notes, team roles + invitations, search/filter/bulk actions, analytics, candidate self-apply portal and email notifications; treat Z.ai/Postgres/SMTP as external blockers; deliver full stack with tests.
+- **Database changes:** added `CandidateNote`, `ActivityEvent`, `Invitation`, `NotificationLog`; added `stage`, `rating`, `updatedAt` to `CandidateApplication`; added `source` to `Candidate`; added `publicToken` to `JobPost`.
+  - A Prisma guard blocked `db push --accept-data-loss` for an AI agent; instead of forcing a destructive reset, the agent removed the problematic unique constraint and avoided data loss. `npx prisma db push` then succeeded.
+- **Backend implementation (agent):**
+  - `pipeline` module: stage transitions, rating, notes, activity timeline, bulk stage changes, notification queue.
+  - `teams` module + `RolesGuard`: OWNER/RECRUITER/VIEWER enforcement, invitations with token acceptance, member removal and role changes.
+  - `candidates.search`: text search, stage/job filters, score/name/recent sorting.
+  - `analytics`: totals, stage funnel, average score, scoring sources, recent activity.
+  - `public-apply`: unauthenticated apply by job token, creating a candidate with `source: "portal"` and an activity event.
+- **Frontend implementation (agent):** `/org/candidates/[id]` (stage, rating, notes, timeline), `/org/team`, `/org/analytics`, `/apply/[token]`, `/invitations/[token]`; candidates list with search/filter/sort/bulk selection; org navigation updated.
+- **Validation/auth:** DTOs with class-validator; `RolesGuard` denies VIEWER stage changes (verified with 403); public apply is the only unauthenticated write route.
+- **Bugs found and fixed:** unresolved Promises inside returned objects serialized as `{}` in `TeamsService.list()` and `TeamsController.myRole()`; wrong `Textarea` import path in a new page.
+- **Tests:** added `test/pipeline.spec.ts`; total **18 tests in 5 suites passed**.
+- **End-to-end:** `server/scripts/verify-expansion.ts` returned `PASS` covering pipeline, notes, timeline, notifications, bulk updates, search/filter, analytics, all three roles and public apply.
+- **Verification:** backend build passed; frontend production build listed 17 routes; all ten new/changed routes returned HTTP 200.
+- **Remaining limitations:** notification delivery is queued by default (`NOTIFICATIONS_ENABLED` must be set to send); invite tokens are shown in the UI rather than emailed; Z.ai/Postgres/SMTP blockers remain external.

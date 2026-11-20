@@ -76,4 +76,15 @@ Architecture as implemented and verified:
 - **New pages:** `/org`, `/org/jobs`, `/org/jobs/[id]`, `/org/candidates`. The candidate-facing email → cover-letter workflow remains unchanged at `/dashboard` and `/applications/[id]`.
 - **Verified:** `npm test` (13 tests), `verify-saas.ts` (PASS, including a cross-tenant isolation check), frontend production build and HTTP 200 on all new routes.
 
+## 7. Full feature expansion (final state)
+
+- **Hiring pipeline:** stages `new → screening → interview → offer → rejected`, ratings, internal notes, activity timeline and notification queue on stage changes.
+- **Teams:** OWNER/RECRUITER/VIEWER roles enforced by `RolesGuard`; invitations accepted by token; owners can change roles and remove non-owner members.
+- **Search:** candidate text search plus stage/job filtering and score/name/recent sorting; bulk stage changes.
+- **Analytics:** org-scoped totals, stage funnel, average score, scoring-method breakdown and recent activity.
+- **Public apply:** `POST /public/apply/:token` creates a candidate (`source: "portal"`) and application without authentication. This is the only unauthenticated write route.
+- **Notifications:** `NotificationLog` records queued messages; live SMTP sending is opt-in via `NOTIFICATIONS_ENABLED=true`.
+- **Pages:** 17 routes total, including `/org/analytics`, `/org/team`, `/org/candidates/[id]`, `/apply/[token]` and `/invitations/[token]`.
+- **Verified:** 18 unit tests in 5 suites; `verify-expansion.ts` PASS; frontend build 17 routes; all routes HTTP 200.
+
 This overview is updated when the architecture changes. Unverified items are labelled `NEEDS HUMAN CONFIRMATION`.

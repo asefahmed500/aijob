@@ -197,7 +197,128 @@ export const api = {
     request<Array<{ applicationId: string; score: ScoreDetail }>>(`/scoring/jobs/${jobId}/score-all`, {
       method: "POST",
     }),
+
+  // Hiring pipeline
+  updateStage: (applicationId: string, stage: string, rating?: number) =>
+    request<{ id: string; stage: string; rating: number | null }>(
+      `/pipeline/applications/${applicationId}/stage`,
+      { method: "PATCH", body: JSON.stringify({ stage, rating }) },
+    ),
+  addNote: (applicationId: string, body: string) =>
+    request<{ id: string; body: string }>(`/pipeline/applications/${applicationId}/notes`, {
+      method: "POST",
+      body: JSON.stringify({ body }),
+    }),
+  getNotes: (applicationId: string) =>
+    request<Array<{ id: string; body: string; authorId: string; createdAt: string }>>(
+      `/pipeline/applications/${applicationId}/notes`,
+    ),
+  getTimeline: (applicationId: string) =>
+    request<Array<{ id: string; type: string; message: string; createdAt: string }>>(
+      `/pipeline/applications/${applicationId}/timeline`,
+    ),
+  bulkStage: (applicationIds: string[], stage: string) =>
+    request<Array<{ id: string; stage: string }>>("/pipeline/bulk-stage", {
+      method: "POST",
+      body: JSON.stringify({ applicationIds, stage }),
+    }),
+  getCandidate: (id: string) => request<CandidateDetail>(`/candidates/${id}`),
+  getNotifications: () =>
+    request<Array<{ id: string; status: string; subject: string; recipient: string; createdAt: string }>>(
+      "/pipeline/notifications",
+    ),
+
+  // Search and analytics
+  searchCandidates: (params: { q?: string; stage?: string; jobId?: string; minScore?: number; sort?: string }) =>
+    request<CandidateSearchRow[]>(
+      `/candidates/search?${new URLSearchParams(
+        Object.entries(params)
+          .filter(([, value]) => value !== undefined && value !== "")
+          .map(([key, value]) => [key, String(value)]),
+      ).toString()}`,
+    ),
+  getAnalytics: () => request<AnalyticsSummary>("/analytics"),
+
+  // Teams
+  getTeam: () => request<{ members: Member[]; invitations: Invitation[] }>("/teams"),
+  getMyRole: () => request<{ role: string }>("/teams/my-role"),
+  inviteMember: (email: string, role: string) =>
+    request<Invitation>("/teams/invite", {
+      method: "POST",
+      body: JSON.stringify({ email, role }),
+    }),
+  removeMember: (userId: string) => request<{ ok: boolean }>(`/teams/members/${userId}`, { method: "DELETE" }),
+  updateMemberRole: (userId: string, role: string) =>
+    request<{ id: string; role: string }>(`/teams/members/${userId}/role`, {
+      method: "PATCH",
+      body: JSON.stringify({ role }),
+    }),
+  acceptInvite: (token: string) =>
+    request<{ organizationId: string; role: string }>("/invitations/accept", {
+      method: "POST",
+      body: JSON.stringify({ token }),
+    }),
+
+  // Public apply
+  publicApply: (token: string, data: { name: string; email: string; resumeText: string }) =>
+    request<{ applicationId: string; jobTitle: string }>(`/public/apply/${token}`, {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 };
+
+export interface CandidateDetail {
+  id: string;
+  name: string;
+  email: string;
+  resumeText: string;
+  source: string;
+  applications: Array<{
+    id: string;
+    stage: string;
+    rating: number | null;
+    job: { id: string; title: string };
+    scores: ScoreDetail[];
+  }>;
+}
+
+export interface CandidateSearchRow {
+  id: string;
+  name: string;
+  email: string;
+  source: string;
+  application: {
+    id: string;
+    stage: string;
+    rating: number | null;
+    jobTitle: string;
+    score: number | null;
+    scoreSource: string | null;
+  } | null;
+}
+
+export interface AnalyticsSummary {
+  totals: { jobs: number; candidates: number; applications: number; scoredApplications: number };
+  jobsByStatus: Record<string, number>;
+  candidatesByStage: Record<string, number>;
+  averageScore: number;
+  scoreSources: Record<string, number>;
+  recentActivity: Array<{ id: string; type: string; message: string; createdAt: string }>;
+}
+
+export interface Member {
+  id: string;
+  role: string;
+  user: { id: string; email: string; name: string | null };
+}
+
+export interface Invitation {
+  id: string;
+  email: string;
+  role: string;
+  token: string;
+  status: string;
+}
 
 export interface ScoreEvidence {
   id: string;
@@ -228,5 +349,6 @@ export interface JobDetail {
   title: string;
   description: string;
   requirements: string;
+  publicToken: string | null;
   applications: RankingEntry[];
 }
