@@ -45,7 +45,10 @@ export class ApplicationsService {
       include: {
         emails: { orderBy: { createdAt: "asc" } },
         evidence: { orderBy: { createdAt: "asc" } },
-        letters: { orderBy: { version: "desc" } },
+        letters: {
+          orderBy: { version: "desc" },
+          include: { claims: true },
+        },
         exports: { orderBy: { createdAt: "desc" } },
       },
     });

@@ -227,7 +227,7 @@ export default function WorkspacePage({ params }: Props) {
                     <CardDescription>Every factual sentence should point to an approved evidence item.</CardDescription>
                   </CardHeader>
                   <CardContent className="flex flex-col gap-2">
-                    {letter.claims.map((claim) => (
+                    {(letter.claims ?? []).map((claim) => (
                       <div key={claim.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-b-0">
                         <span className="flex-1 text-sm">{claim.sentence}</span>
                         <Badge variant={claim.grounded ? "default" : "destructive"}>

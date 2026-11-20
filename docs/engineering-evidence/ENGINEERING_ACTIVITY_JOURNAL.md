@@ -123,3 +123,15 @@ Chronological record of real development activities. "Requested / decided / revi
 - **Fix and rerun:** 11 PASS, 0 FAIL, 3 EXTERNAL. Verified flows: auth register/me/logout/login, duplicate email rejection, org create/switch/members, candidate workflow with all four exports, jobs/candidates/scoring, pipeline stage/notes/timeline/bulk/notifications, search/filter/sort, analytics, teams invite/accept/role enforcement, public apply, and cross-tenant isolation.
 - **Observed AI sources:** evidence, letter and score all recorded `deterministic` because the provider is unavailable.
 - **Not verified in this entry:** browser-level clicking of UI forms; live SMTP delivery; original Postgres credentials.
+
+## E-013 — Real-browser verification of every UI flow
+
+- **Original request (user):** "check every features in depth check all user flow and all so from auth to end user all features actually works with AI all".
+- **Tool:** `agent-browser` with an isolated named session against the Next.js dev server on port 3001.
+- **Auth flow:** login failed with "Could not reach the API" → BUG-014 (CORS port). After the fix, browser login reached `/dashboard` with seeded data.
+- **Candidate workspace:** opening an application crashed → BUG-015 (missing claims). After the fix, all four tabs rendered: emails (3), evidence (9 approved items), cover letter (8 claim mappings, `deterministic`) and export controls.
+- **Org pages verified by rendered content:** `/org` (active org, counts), `/org/jobs` (job + candidate count), `/org/jobs/:id` (five ranked candidates with quoted evidence), `/org/candidates` (search/filter/bulk controls and rows), `/org/candidates/:id` (resume, stage, rating, notes, timeline), `/org/analytics` (totals, funnel, scoring methods, notification log), `/org/team` (role OWNER, members, pending invitations).
+- **Interactive flows:** public apply form submitted successfully from the browser (`Application ... submitted for Backend Engineer`); "Score all candidates" re-ranked five candidates including the two newly created through the UI.
+- **Note:** the Next.js dev-tools overlay intercepted some coordinate clicks on links/tabs; DOM-level clicks confirmed those components work. This is a dev-overlay artifact, not an application defect.
+- **Final regression run:** 18 unit tests passed; `verify-demo.ts` PASS; `verify-all-flows.ts` 11 PASS / 0 FAIL / 3 EXTERNAL.
+- **AI status unchanged:** all observed `source` values were `deterministic`; the Z.ai key has no balance.

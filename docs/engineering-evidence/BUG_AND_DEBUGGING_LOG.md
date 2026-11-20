@@ -103,3 +103,17 @@ Only application bugs and genuine implementation problems are recorded. Tooling 
 - **Investigation:** `JobsService.create()` did not set `publicToken`, and the Prisma field has no default (a default could not be added without a destructive push on the populated table).
 - **Fix (agent):** generate `randomUUID()` in `JobsService.create()`; seed backfills tokens for all jobs missing one.
 - **Verification:** `verify-all-flows.ts` — `PUBLIC APPLY (unauthenticated)` changed from FAIL to PASS.
+
+## BUG-014 — Browser login failed with CORS error
+
+- **Symptom:** in a real browser on `http://localhost:3001`, login showed "Could not reach the API". The preflight returned 204 but the request was rejected.
+- **Root cause:** `app.enableCors({ origin: "http://localhost:3000" })` allowed only port 3000; the dev server had been assigned port 3001 because 3000 was occupied.
+- **Fix (agent):** allow a configurable comma-separated origin list, defaulting to both 3000 and 3001, with a callback that rejects unknown origins.
+- **Verification:** browser login now reaches `/dashboard` and loads seeded application data.
+
+## BUG-015 — Workspace page crashed on missing claims
+
+- **Symptom:** opening an application in the browser produced Next.js "This page couldn't load"; dev log showed `Cannot read properties of undefined (reading 'map')` at the claim-audit section.
+- **Root cause:** `ApplicationsService.get()` returned letters without their `claims` relation, while the UI maps `letter.claims`.
+- **Fix (agent):** include `claims: true` in the letters relation, and use `letter.claims ?? []` defensively in the page.
+- **Verification:** the workspace renders all four tabs; the claim→evidence audit shows 8 mappings.

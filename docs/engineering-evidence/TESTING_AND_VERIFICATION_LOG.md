@@ -154,3 +154,20 @@ Expansion assertions: stage change sets stage and rating; note and timeline even
 Direct Z.ai probes: `GET /paas/v4/models` returned 200 (key authenticates); `POST` chat completions returned 429/1113 on `/paas/v4`, `/coding/paas/v4`, `/v1` and for `glm-4.5-air`, `glm-4.5`, `glm-5.3-flash`.
 
 First run: 9 PASS / 2 FAIL — one incorrect script assertion and one real bug (BUG-013, missing token on new jobs). After the fix: **11 PASS / 0 FAIL / 3 EXTERNAL**. Observed record sources: evidence `deterministic`, letter `deterministic`, score `deterministic`.
+
+## Real-browser verification (`agent-browser`, session `aijob-audit`)
+
+| Page / flow | Actual result |
+| --- | --- |
+| `/login` → `/dashboard` | Initially failed with CORS error (BUG-014); after fix, login succeeded and seeded data loaded |
+| `/applications/:id` | Initially crashed due to missing `claims` (BUG-015); after fix, all four tabs rendered |
+| Workspace tabs | Emails (3), Evidence (9), Cover letter (8 claim mappings), Export controls |
+| `/org`, `/org/jobs` | Active organization and job list rendered |
+| `/org/jobs/:id` | Five ranked candidates with scores and quoted resume evidence |
+| `/org/candidates`, `/org/candidates/:id` | Search/filter/bulk controls, resume, stage, rating, notes and timeline rendered |
+| `/org/analytics` | Totals, funnel, scoring methods, activity and notification log rendered |
+| `/org/team` | OWNER role, members and pending invitations rendered |
+| `/apply/:token` | Public form submitted; success message with application id |
+| Job page "Score all candidates" | Re-ranked five candidates including two created through the UI |
+
+Final regression after fixes: 18 unit tests in 5 suites passed; `verify-demo.ts` PASS; `verify-all-flows.ts` 11 PASS / 0 FAIL / 3 EXTERNAL.
