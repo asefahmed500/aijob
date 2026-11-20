@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# nestjs backend
+/server/node_modules
+/server/dist
+/server/generated
+*.db
+*.db-journal
