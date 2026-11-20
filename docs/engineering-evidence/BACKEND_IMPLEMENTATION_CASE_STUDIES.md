@@ -1,37 +1,61 @@
 # Backend Implementation Case Studies
 
-No substantial backend implementation had been completed at the time this file was created. This file intentionally contains no case study yet: the interview answer must be based on real, verified work.
+All entries describe work performed in this session. The user supplied requirements and decisions; the coding agent generated the implementation. This distinction is explicit.
 
-## Selection criteria to apply later
+---
 
-When real implementations exist, compare them on:
+## CS-01 — Quote-grounded evidence extraction with an AI-provider fallback
 
-- Technical complexity and backend architecture
-- Database design and relationships
-- Complex business logic
-- Authentication and authorization
-- API integrations (Z.ai, SMTP)
-- Debugging difficulty
-- Data consistency requirements
-- Performance and reliability
-- Personal contribution of the user
+**Selected as the strongest case study** because it combines backend design, data consistency, external integration, a debugging difficulty and a trust-critical business rule.
 
-The largest project is not automatically the strongest. Choose the one with the clearest verified evidence.
+1. **What the user requested:** "Make it trustworthy" and match evidence extracted from emails to the job. The user also chose to use the provided Z.ai key for AI features.
+2. **Codebase before the work:** bare Next.js scaffold, no backend, no database, no schema.
+3. **Investigation required:** Context7 docs for NestJS/Prisma; direct API probe of the Z.ai key; reading the email parser and Prisma generated client to decide where validation belongs.
+4. **Implementation plan created:** parse emails → call AI per email → validate each returned quote against the source → persist accepted evidence with offsets → allow approval → generate a letter from approved evidence only.
+5. **What the agent implemented:** `evidence.service.ts`, `evidence.validator.ts`, `zai.client.ts`, `prompts.ts`, `deterministic.ts`, `letter.service.ts`, `letter.validator.ts`, plus `Evidence.source` and `CoverLetter.source` schema fields.
+6. **Backend files changed:** `server/src/evidence/*`, `server/src/ai/*`, `server/src/letter/*`, `server/prisma/schema.prisma`.
+7. **Database/API changes:** added `source`, `verbatimQuote`, `charStart`, `charEnd`, `rawResponse` to `Evidence`; added claim rows linked to letters; added extract/review/generate endpoints.
+8. **Problems encountered:** the Z.ai key returned 429/1113 (no balance), so no AI content could be verified. An early unit test also showed that the letter validator treated generic sentences as ungrounded.
+9. **Investigation and resolution:** the API error body identified a billing problem, not a code defect. Added a deterministic extractor/letter writer that selects exact lines from the email body so the quote rule still holds, and persisted `source` so fallback output is never mistaken for AI output. Fixed the validator so only invalid evidence references are flagged.
+10. **How the user reviewed it:** the user did not review code line-by-line in this session. Review happened through the agent's builds, the unit test failure and the end-to-end verification result, which are recorded here rather than attributed to the user.
+11. **Tests executed:** `npm test -- --runInBand` (10 tests passed after fix); `npx ts-node scripts/verify-demo.ts` (`PASS`, 9 evidence items, 8 claims).
+12. **What was verified:** every stored quote is a substring of its source email; claim ids resolve to approved evidence; 9 evidence items and 8 claims were produced; four export channels returned non-empty artifacts.
 
-## Template for each future case study
+**How agent assistance reduced work:** the agent generated the schema, services, validators, prompts, tests and verification script from one agreed contract, then used the failing test and the API error to locate both defects without a manual bisect. No time-savings figure is claimed.
 
-1. What the user requested
-2. State of the codebase before the work
-3. Investigation required
-4. Implementation plan created
-5. What the coding agent implemented
-6. Backend files/modules changed
-7. Database and API changes required
-8. Problems encountered
-9. How problems were investigated and resolved
-10. How the user reviewed the generated code
-11. Tests executed
-12. What was ultimately verified
-13. Exactly how agent assistance reduced repetitive investigation/implementation/testing/debugging work
+---
 
-Do not invent time savings or performance metrics.
+## CS-02 — JWT authentication and per-resource ownership
+
+1. **What the user requested:** auth and database in v1; later, use NestJS as backend.
+2. **Codebase before:** no auth, no users table, no guards.
+3. **Investigation:** Context7 NestJS passport/JWT and Prisma module patterns; decided on JWT cookies in NestJS instead of Better Auth (AD-003).
+4. **Plan:** users with bcrypt hashes; login/register set httpOnly JWT cookie; guard all application routes; check ownership in service methods before returning or mutating data.
+5. **Agent implemented:** `auth.module.ts`, `auth.service.ts`, `auth.controller.ts`, `jwt.strategy.ts`, `jwt-auth.guard.ts`, `current-user.decorator.ts`, `prisma.service.ts` with Prisma 7 driver adapter.
+6. **Backend files:** listed above, plus `PrismaModule` imports in all dependent modules.
+7. **Database/API:** added `User`, cascade relations from `Application.userId`, and four auth routes.
+8. **Problems:** startup crashed twice with `UnknownDependenciesException` (PrismaService in AuthModule, ZaiClient in EvidenceModule).
+9. **Resolution:** imported the exporting modules (`PrismaModule`, `AiModule`) into every module that injected their providers; application started and mapped all routes.
+10. **Review:** via build/startup output; no user code review in this session.
+11. **Tests:** login was exercised by the end-to-end script; guard behaviour was not separately tested.
+12. **Verified:** seeded login succeeded and the cookie was reused for subsequent authenticated requests.
+
+**How agent assistance reduced work:** the agent produced the full auth module set and then diagnosed both DI failures directly from NestJS's error messages, which named the missing providers.
+
+---
+
+## CS-03 — Environment failures: database and build output
+
+1. **What the user requested:** a demonstrable workflow.
+2. **Problems:** Postgres P1000, Docker daemon stopping, `dist/main.js` missing, generated Prisma client missing at runtime, port 3001 conflict, root build type-checking the backend tree.
+3. **Resolution:** Docker Postgres on 5433 as an interim fix; then SQLite driver adapter for deterministic local runs; start script changed to `dist/src/main.js`; build script copies `generated/` into `dist/generated/`; API moved to port 3002; `server` excluded from root tsconfig.
+4. **Verified:** `prisma db push` and seed succeeded; API started; frontend build succeeded; all five routes returned 200.
+5. **Remaining:** original Postgres credentials and real SMTP delivery remain unverified.
+
+**How agent assistance reduced work:** each failure was diagnosed from an exact command output and fixed with a targeted change, and every fix was recorded in `BUG_AND_DEBUGGING_LOG.md` with the reproduction steps.
+
+---
+
+## Project selection reasoning
+
+CS-01 was selected over the larger auth or frontend work because it contains the product's defining constraint (no invented evidence), an external integration that actually failed, a labelled fallback, and automated verification of both properties. The frontend has more files but no comparable trust-critical logic.

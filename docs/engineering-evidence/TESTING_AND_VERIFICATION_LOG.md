@@ -1,32 +1,100 @@
 # Testing and Verification Log
 
-Record only commands that were actually executed and their actual outcomes. Never mark a test as passed without running it.
+Only commands actually executed and their outcomes are listed.
 
-| Date | Check | Command / method | Actual result |
-| --- | --- | --- | --- |
-| 2026-11-20 | Repository inventory | `git ls-files` | 15 tracked files; confirmed bare scaffold |
-| 2026-11-20 | shadcn project state | `npx shadcn@latest info --json` | `"config": null`, `"components": []` before init |
-| 2026-11-20 | shadcn init | `npx shadcn@latest init --defaults --yes` | Success: `components.json`, `lib/utils.ts`, `components/ui/button.tsx` created; `app/globals.css` updated |
-| 2026-11-20 | shadcn component install | `npx shadcn@latest add card input textarea label tabs badge table dialog alert select separator skeleton progress alert-dialog dropdown-menu sonner tooltip accordion scroll-area avatar empty` | Success: 21 files created, `button.tsx` skipped as identical |
-| 2026-11-20 | Postgres reachability | `Test-NetConnection localhost -Port 5432` | `True` (listener present; credentials not tested) |
-| 2026-11-20 | Docker daemon | `docker ps` | Failed: daemon pipe unavailable |
-| 2026-11-20 | GitHub CLI auth | `gh auth status` | Authenticated as `asefahmed500`, `repo` scope; no remote in repo |
+## 2026-11-20 — Baseline audit
 
-## Not yet performed
+| Command | Actual result |
+| --- | --- |
+| `git ls-files` | 15 tracked files; bare scaffold |
+| `npx shadcn@latest info --json` | `"config": null`, `"components": []` before init |
+| `Test-NetConnection localhost -Port 5432` | `True` (listener only, credentials untested) |
+| `docker ps` | Failed: daemon pipe unavailable |
+| `gh auth status` | Authenticated as `asefahmed500`, `repo` scope, no remote |
 
-- Application unit tests — none exist.
-- Application integration/API tests — none exist.
-- Database migration / seed verification — not performed.
-- Authorization tests — not performed.
-- Production build / lint / typecheck — not performed since shadcn setup.
-- GitHub push / PR verification — no remote configured yet.
+## 2026-11-20 — Frontend setup
 
-## Planned verification for the core workflow
+| Command | Actual result |
+| --- | --- |
+| `npx shadcn@latest init --defaults --yes` | Success: `components.json`, `lib/utils.ts`, `components/ui/button.tsx`; `app/globals.css` updated |
+| `npx shadcn@latest add card input textarea label tabs badge table dialog alert select separator skeleton progress alert-dialog dropdown-menu sonner tooltip accordion scroll-area avatar empty` | 21 files created; `button.tsx` skipped as identical |
+| `npx shadcn@latest add field` | 1 file created; `label.tsx` and `separator.tsx` skipped as identical |
 
-1. `npm run build` and `npm run lint` in both frontend and backend.
-2. Unit tests for email parsing, evidence-quote validation, and grounded-letter validation.
-3. API integration tests with a mocked Z.ai client.
-4. A scripted end-to-end demo over seeded fixtures covering all five export formats.
-5. Authorization tests proving one user cannot read another user's applications.
+## 2026-11-20 — Backend setup and database
 
-Do not mark these as done until the commands are executed and output is recorded here.
+| Command | Actual result |
+| --- | --- |
+| `npx prisma validate` | Valid after moving `url` into `prisma.config.ts` |
+| `npx prisma generate` | Generated Prisma Client v7.10.1 into `generated/prisma` |
+| `npx prisma db push` (Postgres 5432) | Failed P1000 authentication |
+| `docker run ... -p 5433:5432 postgres:16-alpine` | Container `aijob-postgres` started |
+| `npx prisma db push` (Postgres 5433) | "Your database is now in sync with your Prisma schema. Done in 252ms" |
+| `npx prisma db push` (SQLite) | "SQLite database dev.db created ... in sync ... Done in 75ms" |
+| `npx ts-node prisma/seed.ts` | "Seed complete" with demo user, application and 3 emails |
+
+## 2026-11-20 — AI provider probe
+
+| Command | Actual result |
+| --- | --- |
+| `node -r dotenv/config -e "fetch(...chat/completions...)"` | HTTP `429`, body `{"error":{"code":"1113","message":"Insufficient balance or no resource package. Please recharge."}}` |
+
+## 2026-11-20 — Backend unit tests
+
+`npm test -- --runInBand`
+
+- First run: **3 suites, 10 tests, 1 failed** (`letter.validator.spec.ts` expected 1 ungrounded, got 2).
+- After fixing `validateLetterResponse`: **3 suites, 10 tests, all passed**.
+  - `test/email-parser.spec.ts` — 3 tests (header parsing, quoted-reply removal, plain paste).
+  - `test/evidence.validator.spec.ts` — 4 tests (exact quote offsets, paraphrase rejection, invalid item rejection, confidence clamping).
+  - `test/letter.validator.spec.ts` — 3 tests (claim flag semantics, deterministic fallback mapping, empty letter rejection).
+
+## 2026-11-20 — End-to-end verification
+
+`npx ts-node scripts/verify-demo.ts` against the running API on port 3002:
+
+```json
+{
+  "applicationId": "cmwovn0mw0001skfwobcecxl9",
+  "emails": 3,
+  "evidence": 9,
+  "evidenceSource": "deterministic",
+  "usedFallback": true,
+  "letterSource": "deterministic",
+  "claims": 8,
+  "exports": {
+    "markdown": 743,
+    "docx": 13192,
+    "print": 1011,
+    "clipboard": 688
+  },
+  "exportLogEntries": 4,
+  "result": "PASS"
+}
+```
+
+Assertions performed by the script:
+- login succeeds and cookie is reused;
+- at least three seeded emails exist;
+- extraction accepted more than zero items;
+- every stored evidence quote is a substring of its source email's normalized body;
+- letter content is longer than 50 characters and has claim mappings;
+- every non-null claim evidence id exists in the approved evidence set;
+- all four export channels return non-empty content;
+- export log has at least four entries.
+
+## 2026-11-20 — Frontend build and smoke test
+
+| Command | Actual result |
+| --- | --- |
+| `npm run build` (root, first attempt) | Failed: root tsconfig type-checked `server/**` with decorator errors |
+| `npm run build` (root, after excluding `server`) | Compiled successfully; routes `/`, `/login`, `/register`, `/dashboard`, `/applications/[id]` |
+| `node -e "fetch('http://localhost:3000/...')"` | All routes 404 — dev server was actually on port 3003 |
+| `node -e "fetch('http://localhost:3003/...')"` | All five routes returned HTTP 200 |
+
+## Not performed
+
+- SMTP send to a real recipient (deliberately avoided).
+- AI-generated extraction/generation (key has no balance).
+- Live browser interaction test of buttons/forms (pages were smoke-tested over HTTP only).
+- Production deployment.
+- GitHub pull requests / code review approvals — commits were pushed directly.

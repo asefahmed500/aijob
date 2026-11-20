@@ -12,9 +12,9 @@
   4. All five export channels: Markdown, DOCX, print-to-PDF, clipboard, SMTP email.
   5. Documentation in Markdown at every step; public GitHub repo `aijob`; each feature pushed separately.
 - **Technical impact:** New frontend pages, new NestJS backend modules, new database schema, new AI integration, new export services.
-- **Implementation plan:** Recorded in `docs/engineering-evidence/DATABASE_AND_API_DECISIONS.md` and the activity journal.
-- **Files changed:** to be recorded as implementation proceeds.
-- **Testing and outcome:** pending.
+- **Implementation plan:** Recorded in `DATABASE_AND_API_DECISIONS.md` and the activity journal.
+- **Files changed:** `server/src/**` (auth, applications, emails, evidence, letter, ai, exports modules), `server/prisma/schema.prisma`, `app/**`, `components/ui/**`, `lib/api.ts`.
+- **Testing and outcome:** 10 Jest unit tests passed; `server/scripts/verify-demo.ts` returned `PASS` with 3 emails, 9 evidence items, 8 claims and four non-empty export artifacts. SMTP send was not executed. Committed as `c663b64` and `82bff9e`.
 
 ### FR-002 — Engineering evidence documentation
 
@@ -49,4 +49,22 @@
 - **Severity:** High (blocked all persistence work).
 - **Investigation:** port open but credentials rejected; Docker daemon initially unavailable.
 - **Resolution:** Started Docker Desktop, launched `aijob-postgres` (postgres:16-alpine) on host port 5433 with known credentials, pointed git-ignored `server/.env` at it, and successfully ran `prisma db push`. Details in `BUG_AND_DEBUGGING_LOG.md` BUG-001.
-- **Remaining status:** original 5432 instance untouched; `NEEDS HUMAN CONFIRMATION` on whether to use it instead.
+- **Remaining status:** original 5432 instance untouched; `NEEDS HUMAN CONFIRMATION` on whether to use it instead. Docker daemon later stopped and caused ECONNREFUSED, so the local runtime moved to SQLite (AD-002).
+
+### ISSUE-005 — Z.ai key has no balance
+
+- **Problem:** HTTP 429, code 1113, "Insufficient balance or no resource package".
+- **Severity:** High for AI features; the rest of the workflow remains usable.
+- **Resolution:** labelled deterministic fallback added to extraction and generation; persisted `source` distinguishes fallback from AI output. `NEEDS HUMAN CONFIRMATION` whether the key will be recharged.
+
+### ISSUE-006 — No real pull requests
+
+- **Problem:** the repository had no remote at audit; no PR existed.
+- **Severity:** Low (documentation accuracy).
+- **Resolution:** public GitHub repo created and commits pushed directly to `master`. `CODE_REVIEW_AND_PR_HISTORY.md` states explicitly that these were pushes, not PRs.
+
+### ISSUE-007 — SMTP delivery unverified
+
+- **Problem:** `POST /applications/:id/export/send` is implemented but was deliberately not called against a real recipient.
+- **Severity:** Medium for the "five export channels" claim.
+- **Resolution:** route mapped and code reviewed; `NEEDS HUMAN CONFIRMATION` for a live send test.

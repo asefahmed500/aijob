@@ -55,12 +55,18 @@ These are observed facts, not assumptions about the database credentials working
 
 The user instructed: **"use nestjs as backend"** and **"during the coding keep documenting all"**.
 
-Resulting target architecture (proposed by the coding agent, under that instruction):
+Architecture as implemented and verified:
 
-- **Frontend:** existing Next.js 16 App Router app at repository root, with shadcn/ui components.
-- **Backend:** a separate NestJS application in `server/`, exposing a REST API.
-- **Database:** Prisma ORM against the configured Postgres database, owned by the NestJS service.
-- **Authentication:** JWT-based auth implemented in NestJS guards (a deliberate change from the earlier Better Auth idea, because Better Auth is optimized for Next.js route handlers while the backend is now NestJS — recorded in `DATABASE_AND_API_DECISIONS.md`).
-- **AI:** Z.ai OpenAI-compatible chat completions called only from the NestJS backend, never from the browser.
+- **Frontend:** Next.js 16 App Router at the repository root, React 19, Tailwind v4, shadcn/ui components in `components/ui/`. Pages: landing, login, register, dashboard and a four-tab application workspace.
+- **Backend:** NestJS 12 REST API in `server/`. Modules: `auth`, `applications`, `emails`, `evidence`, `letter`, `ai`, `exports` and `PrismaModule`.
+- **Database:** Prisma 7 with `@prisma/adapter-better-sqlite3` against local `dev.db`. The configured Postgres credentials failed authentication and the Docker daemon was unstable, so SQLite is the verified local runtime. `NEEDS HUMAN CONFIRMATION` whether Postgres should be restored.
+- **Authentication:** JWT in an httpOnly cookie, validated by a passport-jwt strategy (`server/src/jwt.strategy.ts`) and `JwtAuthGuard`. Ownership is enforced per resource with `findOwned(userId, id)`. A foreign application id returns 404. There are no RBAC roles yet.
+- **AI:** `ZaiClient` calls the OpenAI-compatible Z.ai chat endpoint (`glm-4.6` default) server-side only. The configured key returned HTTP 429/1113 (insufficient balance), so a labelled deterministic fallback (`server/src/ai/deterministic.ts`) is used. `Evidence.source` and `CoverLetter.source` record which path produced each record.
+- **Trust boundary:** `evidence.validator.ts` rejects any item whose `verbatimQuote` is not an exact substring of its source email. `letter.validator.ts` flags claim references that do not resolve to approved evidence.
+- **Exports:** Markdown, DOCX (`docx`), print HTML, clipboard text and SMTP (`nodemailer`) with a DOCX attachment. Each generation/send writes an `ExportLog` row.
+- **Validation:** class-validator DTOs, global whitelist/transform pipe, NestJS 400/401/404/409/500 exceptions, bounded AI retries.
+- **Testing:** 10 Jest unit tests in `server/test/` and an HTTP end-to-end script `server/scripts/verify-demo.ts`. Both were executed and passed.
+- **Deployment:** no production deployment exists or was verified.
+- **Repository:** public GitHub repo `https://github.com/asefahmed500/aijob`, three commits pushed to `master`.
 
-This overview is updated when the architecture changes. Sections that were not verifiable are explicitly labelled `NEEDS HUMAN CONFIRMATION` rather than guessed.
+This overview is updated when the architecture changes. Unverified items are labelled `NEEDS HUMAN CONFIRMATION`.
