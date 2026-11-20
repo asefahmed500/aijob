@@ -4,6 +4,7 @@ import {
   Get,
   Param,
   Post,
+  Query,
   UseGuards,
 } from "@nestjs/common";
 import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
@@ -24,6 +25,24 @@ export class CandidatesController {
   @Post()
   create(@OrgId() organizationId: string, @Body() dto: CreateCandidateDto) {
     return this.candidates.create(organizationId, dto);
+  }
+
+  @Get("search")
+  search(
+    @OrgId() organizationId: string,
+    @Query("q") q?: string,
+    @Query("stage") stage?: string,
+    @Query("jobId") jobId?: string,
+    @Query("minScore") minScore?: string,
+    @Query("sort") sort?: "score" | "name" | "recent",
+  ) {
+    return this.candidates.search(organizationId, {
+      q,
+      stage,
+      jobId,
+      minScore: minScore !== undefined ? Number(minScore) : undefined,
+      sort,
+    });
   }
 
   @Get(":id")

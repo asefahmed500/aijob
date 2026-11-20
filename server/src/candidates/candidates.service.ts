@@ -66,6 +66,71 @@ export class CandidatesService {
     });
   }
 
+  async search(
+    organizationId: string,
+    options: {
+      q?: string;
+      stage?: string;
+      jobId?: string;
+      minScore?: number;
+      sort?: "score" | "name" | "recent";
+    },
+  ) {
+    const candidates = await this.prisma.candidate.findMany({
+      where: { organizationId },
+      include: {
+        applications: {
+          include: {
+            job: { select: { id: true, title: true } },
+            scores: { orderBy: { createdAt: "desc" }, take: 1 },
+          },
+        },
+      },
+    });
+
+    const query = options.q?.toLowerCase().trim();
+    const filtered = candidates
+      .map((candidate) => {
+        const application = options.jobId
+          ? candidate.applications.find((item) => item.jobId === options.jobId)
+          : candidate.applications[0];
+        return {
+          id: candidate.id,
+          name: candidate.name,
+          email: candidate.email,
+          source: candidate.source,
+          createdAt: candidate.createdAt,
+          application: application
+            ? {
+                id: application.id,
+                stage: application.stage,
+                rating: application.rating,
+                jobTitle: application.job.title,
+                score: application.scores[0]?.score ?? null,
+                scoreSource: application.scores[0]?.source ?? null,
+              }
+            : null,
+        };
+      })
+      .filter((row) => {
+        if (query && !`${row.name} ${row.email}`.toLowerCase().includes(query)) return false;
+        if (options.stage && row.application?.stage !== options.stage) return false;
+        if (options.jobId && !row.application) return false;
+        if (options.minScore !== undefined && (row.application?.score ?? -1) < options.minScore) {
+          return false;
+        }
+        return true;
+      });
+
+    const sort = options.sort ?? "score";
+    filtered.sort((a, b) => {
+      if (sort === "name") return a.name.localeCompare(b.name);
+      if (sort === "recent") return b.createdAt.getTime() - a.createdAt.getTime();
+      return (b.application?.score ?? -1) - (a.application?.score ?? -1);
+    });
+    return filtered;
+  }
+
   async ranking(organizationId: string, jobId: string) {
     const job = await this.prisma.jobPost.findFirst({
       where: { id: jobId, organizationId },

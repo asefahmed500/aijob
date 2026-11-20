@@ -12,6 +12,10 @@ import { OrganizationsModule } from "./organizations/organizations.module";
 import { JobsModule } from "./jobs/jobs.module";
 import { CandidatesModule } from "./candidates/candidates.module";
 import { ScoringModule } from "./scoring/scoring.module";
+import { PipelineModule } from "./pipeline/pipeline.module";
+import { TeamsModule } from "./teams/teams.module";
+import { AnalyticsModule } from "./analytics/analytics.module";
+import { PublicApplyModule } from "./public-apply/public-apply.module";
 
 @Module({
   imports: [
@@ -31,6 +35,10 @@ import { ScoringModule } from "./scoring/scoring.module";
     JobsModule,
     CandidatesModule,
     ScoringModule,
+    PipelineModule,
+    TeamsModule,
+    AnalyticsModule,
+    PublicApplyModule,
   ],
 })
 export class AppModule {}

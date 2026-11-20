@@ -1,4 +1,5 @@
 import "dotenv/config";
+import { randomUUID } from "node:crypto";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../generated/prisma";
 
@@ -108,6 +109,13 @@ async function main() {
         description: "We are hiring a backend engineer to build AI-powered services.",
         requirements: REQUIREMENTS.join("\n"),
       },
+    });
+  }
+
+  if (!job.publicToken) {
+    job = await prisma.jobPost.update({
+      where: { id: job.id },
+      data: { publicToken: randomUUID() },
     });
   }
 
