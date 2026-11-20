@@ -1,0 +1,43 @@
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+} from "@nestjs/common";
+import { JwtAuthGuard } from "../common/guards/jwt-auth.guard";
+import { OrgGuard, OrgId } from "../organizations/org-context";
+import { CandidatesService } from "./candidates.service";
+import { ApplyCandidateDto, CreateCandidateDto } from "./dto/candidate.dto";
+
+@Controller("candidates")
+@UseGuards(JwtAuthGuard, OrgGuard)
+export class CandidatesController {
+  constructor(private readonly candidates: CandidatesService) {}
+
+  @Get()
+  list(@OrgId() organizationId: string) {
+    return this.candidates.list(organizationId);
+  }
+
+  @Post()
+  create(@OrgId() organizationId: string, @Body() dto: CreateCandidateDto) {
+    return this.candidates.create(organizationId, dto);
+  }
+
+  @Get(":id")
+  get(@OrgId() organizationId: string, @Param("id") id: string) {
+    return this.candidates.get(organizationId, id);
+  }
+
+  @Post("apply")
+  apply(@OrgId() organizationId: string, @Body() dto: ApplyCandidateDto) {
+    return this.candidates.apply(organizationId, dto.candidateId, dto.jobId);
+  }
+
+  @Get("ranking/:jobId")
+  ranking(@OrgId() organizationId: string, @Param("jobId") jobId: string) {
+    return this.candidates.ranking(organizationId, jobId);
+  }
+}

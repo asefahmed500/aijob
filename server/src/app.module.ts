@@ -8,6 +8,10 @@ import { EvidenceModule } from "./evidence/evidence.module";
 import { LetterModule } from "./letter/letter.module";
 import { AiModule } from "./ai/ai.module";
 import { ExportsModule } from "./exports/exports.module";
+import { OrganizationsModule } from "./organizations/organizations.module";
+import { JobsModule } from "./jobs/jobs.module";
+import { CandidatesModule } from "./candidates/candidates.module";
+import { ScoringModule } from "./scoring/scoring.module";
 
 @Module({
   imports: [
@@ -23,6 +27,10 @@ import { ExportsModule } from "./exports/exports.module";
     EvidenceModule,
     LetterModule,
     ExportsModule,
+    OrganizationsModule,
+    JobsModule,
+    CandidatesModule,
+    ScoringModule,
   ],
 })
 export class AppModule {}
