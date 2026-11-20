@@ -18,7 +18,16 @@
 | `c663b64` | feat: NestJS backend with JWT auth, evidence trust boundary and five export channels | `server/**` — 52 files |
 | `82bff9e` | feat: Next.js shadcn UI for the four-step workflow | `app/**`, `components/ui/**`, `lib/api.ts`, frontend config |
 
-A final documentation commit will be pushed after this record is completed.
+Later commits pushed to `master`:
+
+| Commit | Message | Scope |
+| --- | --- | --- |
+| `0564f86` | feat: multi-tenant SaaS backend with AI candidate ranking and tenant guards | 24 files |
+| `ef69ea3` | feat: organization pages, ranking UI and updated engineering evidence | 15 files |
+| `010405f` | feat: hiring pipeline, team roles, search, analytics, public apply and notifications | 26 files |
+| `1602334` | feat: pipeline, team, analytics, apply and invitation pages with evidence updates | 17 files |
+
+All were direct pushes. No PRs were opened or approved at any point.
 
 ## Code-review activities that actually occurred
 
