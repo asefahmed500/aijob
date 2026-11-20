@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { CreateJobDto } from "./dto/job.dto";
@@ -21,6 +22,7 @@ export class JobsService {
         title: dto.title.trim(),
         description: dto.description.trim(),
         requirements: dto.requirements.trim(),
+        publicToken: randomUUID(),
       },
     });
   }

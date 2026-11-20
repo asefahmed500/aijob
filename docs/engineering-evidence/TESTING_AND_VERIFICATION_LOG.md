@@ -131,3 +131,26 @@ SaaS verification assertions: login, organization switch, seeded job and candida
 | HTTP smoke test on port 3001 | 10 routes returned 200, including `/apply/demo` and `/invitations/demo` |
 
 Expansion assertions: stage change sets stage and rating; note and timeline events are persisted; notification log is written; bulk stage changes apply to two candidates; text search and stage filter return correct rows; analytics counts and average score are non-zero; RECRUITER can change stage; VIEWER receives 403 on a stage change; public apply creates an application without authentication.
+
+## 2026-11-20 — Full-depth flow audit (`verify-all-flows.ts`)
+
+| Flow | Result |
+| --- | --- |
+| Auth: register / me / logout / login | PASS |
+| Auth: duplicate email rejected (409) | PASS |
+| Org: create / switch / current / members | PASS |
+| Candidate workflow: app / email / evidence / letter / 4 exports | PASS |
+| Jobs + candidates + scoring + ranking | PASS |
+| Pipeline: stage / rating / notes / timeline / bulk / notification | PASS |
+| Search / filter / sort | PASS |
+| Analytics | PASS |
+| Teams: invite / accept / role enforcement / same-org access | PASS |
+| Public apply (unauthenticated) | PASS |
+| Cross-tenant isolation (foreign job returns 404) | PASS |
+| AI provider | EXTERNAL — 429/1113 on all endpoints and models probed |
+| SMTP live delivery | EXTERNAL — not executed |
+| Original Postgres credentials | EXTERNAL — invalid; SQLite used locally |
+
+Direct Z.ai probes: `GET /paas/v4/models` returned 200 (key authenticates); `POST` chat completions returned 429/1113 on `/paas/v4`, `/coding/paas/v4`, `/v1` and for `glm-4.5-air`, `glm-4.5`, `glm-5.3-flash`.
+
+First run: 9 PASS / 2 FAIL — one incorrect script assertion and one real bug (BUG-013, missing token on new jobs). After the fix: **11 PASS / 0 FAIL / 3 EXTERNAL**. Observed record sources: evidence `deterministic`, letter `deterministic`, score `deterministic`.

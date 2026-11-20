@@ -95,3 +95,11 @@ Only application bugs and genuine implementation problems are recorded. Tooling 
 - **Symptom:** `next build` failed: `Export Textarea doesn't exist in target module components/ui/input.tsx`.
 - **Fix (agent):** imported `Textarea` from `components/ui/textarea` instead.
 - **Verification:** `npm run build` succeeded with 17 routes.
+
+## BUG-013 — Newly created jobs had no public apply token
+
+- **Reported behavior:** `POST /public/apply/:token` could not be used for a job created through `POST /jobs`; the job's `publicToken` was `null`. Only seeded jobs had a token.
+- **Expected:** every job gets a public apply token at creation.
+- **Investigation:** `JobsService.create()` did not set `publicToken`, and the Prisma field has no default (a default could not be added without a destructive push on the populated table).
+- **Fix (agent):** generate `randomUUID()` in `JobsService.create()`; seed backfills tokens for all jobs missing one.
+- **Verification:** `verify-all-flows.ts` — `PUBLIC APPLY (unauthenticated)` changed from FAIL to PASS.

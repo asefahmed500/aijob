@@ -113,3 +113,13 @@ Chronological record of real development activities. "Requested / decided / revi
 - **End-to-end:** `server/scripts/verify-expansion.ts` returned `PASS` covering pipeline, notes, timeline, notifications, bulk updates, search/filter, analytics, all three roles and public apply.
 - **Verification:** backend build passed; frontend production build listed 17 routes; all ten new/changed routes returned HTTP 200.
 - **Remaining limitations:** notification delivery is queued by default (`NOTIFICATIONS_ENABLED` must be set to send); invite tokens are shown in the UI rather than emailed; Z.ai/Postgres/SMTP blockers remain external.
+
+## E-012 — Full-depth flow audit
+
+- **Original request (user):** "check every features in depth check all user flow and all so from auth to end user all features actually works with AI all".
+- **AI probe (agent):** re-tested the configured key on `/paas/v4/chat/completions`, `/coding/paas/v4/chat/completions`, `/v1/chat/completions`, and models `glm-4.5-air`, `glm-4.5`, `glm-5.3-flash`. `GET /paas/v4/models` returned 200 (key authenticates), but every chat completion returned `429 / 1113 Insufficient balance`. AI-generated output cannot be verified without a funded key.
+- **Script (agent):** `server/scripts/verify-all-flows.ts` exercises 11 flows with fresh users and an isolated organization.
+- **First run:** 9 PASS, 2 FAIL. One failure was an incorrect assertion in the script (wrong id type); the other was a real bug — newly created jobs had no `publicToken` (BUG-013).
+- **Fix and rerun:** 11 PASS, 0 FAIL, 3 EXTERNAL. Verified flows: auth register/me/logout/login, duplicate email rejection, org create/switch/members, candidate workflow with all four exports, jobs/candidates/scoring, pipeline stage/notes/timeline/bulk/notifications, search/filter/sort, analytics, teams invite/accept/role enforcement, public apply, and cross-tenant isolation.
+- **Observed AI sources:** evidence, letter and score all recorded `deterministic` because the provider is unavailable.
+- **Not verified in this entry:** browser-level clicking of UI forms; live SMTP delivery; original Postgres credentials.

@@ -112,12 +112,14 @@ async function main() {
     });
   }
 
-  if (!job.publicToken) {
-    job = await prisma.jobPost.update({
-      where: { id: job.id },
+  const withoutToken = await prisma.jobPost.findMany({ where: { publicToken: null } });
+  for (const record of withoutToken) {
+    await prisma.jobPost.update({
+      where: { id: record.id },
       data: { publicToken: randomUUID() },
     });
   }
+  job = (await prisma.jobPost.findUnique({ where: { id: job.id } })) ?? job;
 
   for (const candidate of CANDIDATES) {
     const existing = await prisma.candidate.findFirst({
