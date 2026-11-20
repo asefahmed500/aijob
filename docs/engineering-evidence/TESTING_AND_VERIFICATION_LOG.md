@@ -98,3 +98,20 @@ Assertions performed by the script:
 - Live browser interaction test of buttons/forms (pages were smoke-tested over HTTP only).
 - Production deployment.
 - GitHub pull requests / code review approvals — commits were pushed directly.
+
+## 2026-11-20 — SaaS expansion
+
+| Command / check | Actual result |
+| --- | --- |
+| `npx prisma db push` (after adding 7 models) | "Your database is now in sync with your Prisma schema. Done in 89ms" |
+| `npx prisma generate` | Generated Prisma Client v7.10.1 |
+| `npx ts-node prisma/seed.ts` | Seed complete with demo organization, job and 3 candidates |
+| `npm test -- --runInBand` (first SaaS run) | 4 suites, 13 tests passed; haste collision warning |
+| `npm test -- --runInBand` (after jest config fix) | 4 suites, 13 tests passed, no warning |
+| `npx ts-node scripts/verify-saas.ts` | `PASS`: 3 ranked candidates, top score 80, 10 verified quotes, crossOrgIsolation PASS |
+| `npm run build` (backend) | Success |
+| `npm run build` (frontend, first attempt) | Failed `CLIENT_HOOK_DYNAMIC` on `/org/jobs/[id]` |
+| `npm run build` (frontend, after removing `usePathname`) | Success; 10 routes listed |
+| HTTP smoke test on port 3003 | `/`, `/org`, `/org/jobs`, `/org/candidates`, `/org/jobs/demo` all returned 200 |
+
+SaaS verification assertions: login, organization switch, seeded job and candidates present, score-all produces scores, ranking sorted descending, every evidence quote is a substring of the candidate resume at the stored offsets, and a second user in a different organization cannot list or read the first organization's job.

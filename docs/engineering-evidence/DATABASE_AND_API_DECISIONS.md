@@ -58,3 +58,31 @@
 | GET | `/applications/:id/export/history` | Export audit log | Yes |
 
 "Route mapped" means NestJS logged the route at startup but the verify script did not call it. It does not mean the behaviour was tested.
+
+## SaaS additions (AD-006 — tenant isolation)
+
+- **Decision:** every organization-scoped table carries `organizationId`; `OrgGuard` validates the active organization from the `active_org` cookie against the user's memberships, and all service queries filter by that id.
+- **Rationale:** strict tenant isolation is the defining requirement of a multi-tenant SaaS. Verified by a scripted cross-organization access attempt that returned 404.
+
+### SaaS models
+
+`Organization`, `Membership` (unique on `userId + organizationId`), `JobPost`, `Candidate`, `CandidateApplication` (unique on `jobId + candidateId`), `CandidateScore`, `ScoreEvidence`.
+
+### Verified SaaS routes
+
+| Method | Route | Verified |
+| --- | --- | --- |
+| GET | `/organizations` | Yes |
+| POST | `/organizations` | Yes (isolation test) |
+| POST | `/organizations/switch` | Yes |
+| GET | `/organizations/current` | Yes |
+| GET | `/organizations/members` | Route mapped |
+| GET | `/jobs` | Yes |
+| POST | `/jobs` | Route mapped |
+| GET | `/jobs/:id` | Yes (and 404 for a foreign org) |
+| GET | `/candidates` | Yes |
+| POST | `/candidates` | Route mapped |
+| POST | `/candidates/apply` | Route mapped |
+| GET | `/candidates/ranking/:jobId` | Yes |
+| POST | `/scoring/jobs/:id/score-all` | Yes |
+| POST | `/scoring/applications/:id/score` | Route mapped |

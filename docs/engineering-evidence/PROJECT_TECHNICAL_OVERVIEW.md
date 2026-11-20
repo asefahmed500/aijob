@@ -67,6 +67,13 @@ Architecture as implemented and verified:
 - **Validation:** class-validator DTOs, global whitelist/transform pipe, NestJS 400/401/404/409/500 exceptions, bounded AI retries.
 - **Testing:** 10 Jest unit tests in `server/test/` and an HTTP end-to-end script `server/scripts/verify-demo.ts`. Both were executed and passed.
 - **Deployment:** no production deployment exists or was verified.
-- **Repository:** public GitHub repo `https://github.com/asefahmed500/aijob`, three commits pushed to `master`.
+- **Repository:** public GitHub repo `https://github.com/asefahmed500/aijob`; commits pushed to `master`.
+
+## 6. SaaS expansion (added after the core workflow was verified)
+
+- **Multi-tenancy:** `Organization`, `Membership`, `JobPost`, `Candidate`, `CandidateApplication`, `CandidateScore`, `ScoreEvidence`. An `OrgGuard` resolves the active organization from the `active_org` cookie and checks membership; all org-scoped queries include `organizationId`, so a foreign id returns 404.
+- **Candidate ranking:** `scoring.service.ts` matches each job requirement to exact resume sentences, stores a 0–100 score and quoted evidence, and labels the source as `zai` or `deterministic`.
+- **New pages:** `/org`, `/org/jobs`, `/org/jobs/[id]`, `/org/candidates`. The candidate-facing email → cover-letter workflow remains unchanged at `/dashboard` and `/applications/[id]`.
+- **Verified:** `npm test` (13 tests), `verify-saas.ts` (PASS, including a cross-tenant isolation check), frontend production build and HTTP 200 on all new routes.
 
 This overview is updated when the architecture changes. Unverified items are labelled `NEEDS HUMAN CONFIRMATION`.

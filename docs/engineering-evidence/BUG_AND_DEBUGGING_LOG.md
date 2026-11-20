@@ -68,3 +68,17 @@ Only application bugs and genuine implementation problems are recorded. Tooling 
 - **Investigation:** read the dev server output, which showed "using available port 3003 instead".
 - **Fix (agent):** repeated smoke test against 3003; all five routes returned HTTP 200.
 - **Status:** resolved; no application defect.
+
+## BUG-009 — Jest haste module naming collision
+
+- **Symptom:** `jest-haste-map: Haste module naming collision: prisma-client-...` between `generated/prisma/package.json` and `dist/generated/prisma/package.json`.
+- **Root cause:** both directories are inside the project root, and the build copies the generated client into `dist/`.
+- **Fix (agent):** added `modulePathIgnorePatterns: ["<rootDir>/dist/"]` to `server/jest.config.js`.
+- **Verification:** rerun `npm test -- --runInBand` — no warning, 4 suites and 13 tests passed.
+
+## BUG-010 — Next.js 16 Cache Components blocked prerender
+
+- **Symptom:** `next build` failed on `/org/jobs/[id]` with `CLIENT_HOOK_DYNAMIC`: `usePathname()` in a client component outside `<Suspense>` blocks prerendering.
+- **Root cause:** `app/org/layout.tsx` used `usePathname()` only as a `useEffect` dependency to refresh the active organization; the value is runtime-only.
+- **Fix (agent):** removed `usePathname` and its dependency; the switcher refreshes explicitly after a switch.
+- **Verification:** `npm run build` succeeded and listed `/org`, `/org/jobs`, `/org/candidates`, `/org/jobs/[id]`.

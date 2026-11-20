@@ -31,6 +31,12 @@ export default function Home() {
             >
               Sign in
             </Link>
+            <Link
+              className={buttonVariants({ variant: "ghost", size: "lg" })}
+              href="/org"
+            >
+              For organizations
+            </Link>
           </div>
         </div>
 

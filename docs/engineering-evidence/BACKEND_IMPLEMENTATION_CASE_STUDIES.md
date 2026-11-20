@@ -56,6 +56,23 @@ All entries describe work performed in this session. The user supplied requireme
 
 ---
 
+## CS-04 — Multi-tenant candidate ranking (SaaS expansion)
+
+1. **What the user requested:** an AI job portal that organizations can use to sort candidates, with strict tenant isolation, while keeping the existing candidate-facing workflow.
+2. **Codebase before:** single-user workflow with `Application` as the only domain aggregate; no organizations, jobs or candidates.
+3. **Investigation:** reviewed the existing Prisma schema and auth guard to decide where tenant context belongs; chose a cookie-backed active organization validated on each request.
+4. **Plan:** add organization and membership models; scope jobs and candidates by organization; add scoring that matches requirements to exact resume sentences; verify cross-tenant access is denied.
+5. **Agent implemented:** `OrgGuard`, organizations/jobs/candidates/scoring modules, `scoreDeterministic`, Z.ai-first scoring with labelled source, four org pages and an org switcher.
+6. **Backend files:** `server/src/organizations/*`, `server/src/jobs/*`, `server/src/candidates/*`, `server/src/scoring/*`, `server/prisma/schema.prisma`.
+7. **Database/API:** 7 new models with indexes and unique constraints; 15 new routes.
+8. **Problems:** a Jest haste collision from the copied generated client; a Next.js Cache Components prerender failure caused by `usePathname()` in a client layout.
+9. **Resolution:** ignored `dist/` in Jest; removed the unnecessary hook.
+10. **Review:** via compiler/build/test feedback; no user line-by-line review or PR.
+11. **Tests:** 13 unit tests (including `test/scoring.spec.ts`); `verify-saas.ts` PASS.
+12. **Verified:** top candidate scored 80%, 10 quotes verified against resumes at exact offsets, and a foreign-org request returned 404.
+
+**Agent acceleration:** the agent produced the schema, guards, four modules and four pages from the agreed tenancy rule, then verified isolation automatically rather than requiring manual cross-user checks.
+
 ## Project selection reasoning
 
 CS-01 was selected over the larger auth or frontend work because it contains the product's defining constraint (no invented evidence), an external integration that actually failed, a labelled fallback, and automated verification of both properties. The frontend has more files but no comparable trust-critical logic.

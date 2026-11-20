@@ -62,7 +62,10 @@ export default function DashboardPage() {
             <h1 className="text-2xl font-semibold tracking-tight">Applications</h1>
             <p className="text-sm text-muted-foreground">Each application follows the same four-step workflow.</p>
           </div>
-          <Button variant="outline" onClick={logout}>Sign out</Button>
+          <div className="flex gap-2">
+            <Link className={buttonVariants({ variant: "outline" })} href="/org">Organization</Link>
+            <Button variant="outline" onClick={logout}>Sign out</Button>
+          </div>
         </div>
 
         {error ? (

@@ -148,4 +148,85 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ letterId, recipient }),
     }),
+
+  // Organization (SaaS) API
+  listOrganizations: () =>
+    request<Array<{ organizationId: string; role: string; organization: { id: string; name: string; slug: string } }>>(
+      "/organizations",
+    ),
+  createOrganization: (name: string) =>
+    request<{ id: string; name: string }>("/organizations", {
+      method: "POST",
+      body: JSON.stringify({ name }),
+    }),
+  switchOrganization: (organizationId: string) =>
+    request<{ ok: boolean }>("/organizations/switch", {
+      method: "POST",
+      body: JSON.stringify({ organizationId }),
+    }),
+  currentOrganization: () =>
+    request<{ id: string; name: string; _count: { jobs: number; candidates: number } }>(
+      "/organizations/current",
+    ),
+  listJobs: () =>
+    request<Array<{ id: string; title: string; status: string; createdAt: string; _count: { applications: number } }>>(
+      "/jobs",
+    ),
+  createJob: (title: string, description: string, requirements: string) =>
+    request<{ id: string; title: string }>("/jobs", {
+      method: "POST",
+      body: JSON.stringify({ title, description, requirements }),
+    }),
+  getJob: (id: string) => request<JobDetail>(`/jobs/${id}`),
+  listCandidates: () =>
+    request<Array<{ id: string; name: string; email: string; _count: { applications: number } }>>(
+      "/candidates",
+    ),
+  createCandidate: (name: string, email: string, resumeText: string) =>
+    request<{ id: string; name: string }>("/candidates", {
+      method: "POST",
+      body: JSON.stringify({ name, email, resumeText }),
+    }),
+  applyCandidate: (candidateId: string, jobId: string) =>
+    request<{ id: string }>("/candidates/apply", {
+      method: "POST",
+      body: JSON.stringify({ candidateId, jobId }),
+    }),
+  ranking: (jobId: string) => request<RankingEntry[]>(`/candidates/ranking/${jobId}`),
+  scoreJob: (jobId: string) =>
+    request<Array<{ applicationId: string; score: ScoreDetail }>>(`/scoring/jobs/${jobId}/score-all`, {
+      method: "POST",
+    }),
 };
+
+export interface ScoreEvidence {
+  id: string;
+  requirement: string;
+  quote: string;
+  charStart: number;
+  charEnd: number;
+}
+
+export interface ScoreDetail {
+  id: string;
+  score: number;
+  summary: string;
+  source: string;
+  model: string;
+  evidences: ScoreEvidence[];
+}
+
+export interface RankingEntry {
+  id: string;
+  status: string;
+  candidate: { id: string; name: string; email: string; resumeText: string };
+  score: ScoreDetail | null;
+}
+
+export interface JobDetail {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string;
+  applications: RankingEntry[];
+}

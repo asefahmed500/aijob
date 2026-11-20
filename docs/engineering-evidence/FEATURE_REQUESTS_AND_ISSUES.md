@@ -68,3 +68,11 @@
 - **Problem:** `POST /applications/:id/export/send` is implemented but was deliberately not called against a real recipient.
 - **Severity:** Medium for the "five export channels" claim.
 - **Resolution:** route mapped and code reviewed; `NEEDS HUMAN CONFIRMATION` for a live send test.
+
+### FR-003 — Multi-tenant SaaS job portal with candidate ranking
+
+- **Original request (user):** "this will be ai job portal every org can use it to sort their candidates ... it will be a saas".
+- **Accepted criteria (user answers):** organizations as isolated tenants; AI score with quoted evidence; keep the candidate-facing workflow; build backend and pages.
+- **Technical impact:** 7 new Prisma models, 4 new NestJS modules, 15 new routes, 4 new pages, org switcher and tenant guards.
+- **Files changed:** `server/prisma/schema.prisma`, `server/src/organizations/**`, `server/src/jobs/**`, `server/src/candidates/**`, `server/src/scoring/**`, `server/scripts/verify-saas.ts`, `app/org/**`, `lib/api.ts`.
+- **Testing and outcome:** 13 unit tests passed; `verify-saas.ts` PASS with 3 candidates ranked, top score 80, 10 verified evidence quotes and a cross-org 404 check.

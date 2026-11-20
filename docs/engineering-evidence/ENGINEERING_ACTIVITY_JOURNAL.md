@@ -78,3 +78,18 @@ Chronological record of real development activities. "Requested / decided / revi
 
 - **Actions (agent):** updated all ten evidence files with the verified facts above and wrote the consolidated Brillmark answers, keeping them within the requested length.
 - **User contribution in this session:** supplied requirements, chose the backend framework, requested continuous documentation, and supplied credentials/configuration. The user did not personally write application code or run tests in this session; this is stated explicitly rather than attributed.
+
+## E-010 — SaaS expansion: multi-tenant organizations and AI candidate ranking
+
+- **Original request (user):** "this will be ai job portal every org can use it to sort their candidates ... it will be a saas".
+- **Clarifications answered by user:** organizations are isolated tenants; sorting means AI score plus evidence; keep the existing email-to-cover-letter workflow as candidate-facing; build the SaaS backend and pages now.
+- **Decision (agent):** keep the verified core workflow intact and add a new org-scoped side of the application. Tenant isolation is enforced by an `OrgGuard` that resolves the active organization from the `active_org` cookie and validates membership on every org-scoped request.
+- **Database changes:** added `Organization`, `Membership` (with `OWNER`/`RECRUITER` role), `JobPost`, `Candidate`, `CandidateApplication`, `CandidateScore`, `ScoreEvidence`. `npx prisma db push` and `npx prisma generate` succeeded; seed now creates a demo organization, job and three candidates.
+- **Backend implementation (agent):** modules `organizations`, `jobs`, `candidates`, `scoring`; 15 new routes; `scoreDeterministic()` matches job requirements to exact resume sentences; `ScoringService` tries Z.ai first and records `source: "zai" | "deterministic"`.
+- **Validation/authorization:** DTO validation; `JwtAuthGuard` plus `OrgGuard`; every query filters by `organizationId`; foreign ids return 404.
+- **Frontend implementation (agent):** `app/org/layout.tsx` with an organization switcher, plus `/org`, `/org/jobs`, `/org/jobs/[id]` (ranking with evidence), `/org/candidates`. Landing and dashboard link to the org area.
+- **Bugs discovered and fixed:** Jest haste collision between `generated/` and `dist/generated/` (added `modulePathIgnorePatterns`); Next.js 16 Cache Components blocked prerendering because `usePathname()` was used in a client layout outside Suspense (removed the hook).
+- **Tests (agent):** `test/scoring.spec.ts` added — total **13 tests passed in 4 suites**.
+- **End-to-end (agent):** `server/scripts/verify-saas.ts` returned `PASS`: 3 ranked candidates, top score 80, 10 evidence quotes verified against resumes with correct offsets, and a cross-organization isolation check that returned 404 for a foreign job.
+- **Verification:** backend build passed, frontend production build listed all ten routes, new `/org*` routes returned HTTP 200 on the dev server.
+- **Limitations:** AI scoring used the deterministic path because the Z.ai key has no balance; no recruitment workflow states beyond `new`; no invitations or role management UI.
