@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String?
+  passwordHash String
+  createdAt    DateTime      @default(now())
+  applications Application[]
+}
+
+model Application {
+  id          String        @id @default(cuid())
+  userId      String
+  user        User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  company     String
+  role        String
+  status      String        @default("draft")
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  emails      EmailSource[]
+  evidence    Evidence[]
+  letters     CoverLetter[]
+  exports     ExportLog[]
+
+  @@index([userId])
+}
+
+model EmailSource {
+  id             String    @id @default(cuid())
+  applicationId  String
+  application    Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  subject        String?
+  fromAddress    String?
+  receivedAt     DateTime?
+  rawBody        String
+  normalizedBody String
+  createdAt      DateTime  @default(now())
+  evidence       Evidence[]
+
+  @@index([applicationId])
+}
+
+model Evidence {
+  id            String      @id @default(cuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  emailSourceId String
+  emailSource   EmailSource @relation(fields: [emailSourceId], references: [id], onDelete: Cascade)
+  kind          String
+  claim         String
+  verbatimQuote String
+  charStart     Int
+  charEnd       Int
+  confidence    Float       @default(0.7)
+  approved      Boolean     @default(false)
+  source        String      @default("zai")
+  rawResponse   String?
+  createdAt     DateTime    @default(now())
+
+  @@index([applicationId])
+  @@index([emailSourceId])
+}
+
+model CoverLetter {
+  id            String        @id @default(cuid())
+  applicationId String
+  application   Application   @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  content       String
+  model         String
+  promptVersion String
+  source        String      @default("zai")
+  rawResponse   String?
+  version       Int           @default(1)
+  createdAt     DateTime      @default(now())
+  claims        LetterClaim[]
+  exports       ExportLog[]
+
+  @@index([applicationId])
+}
+
+model LetterClaim {
+  id         String      @id @default(cuid())
+  letterId   String
+  letter     CoverLetter @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  sentence   String
+  evidenceId String?
+  grounded   Boolean
+  note       String?
+
+  @@index([letterId])
+}
+
+model ExportLog {
+  id            String      @id @default(cuid())
+  letterId      String
+  letter        CoverLetter @relation(fields: [letterId], references: [id], onDelete: Cascade)
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  format        String
+  recipient     String?
+  status        String
+  createdAt     DateTime    @default(now())
+
+  @@index([letterId])
+}
