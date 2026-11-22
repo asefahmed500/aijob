@@ -16,6 +16,8 @@ import { PipelineModule } from "./pipeline/pipeline.module";
 import { TeamsModule } from "./teams/teams.module";
 import { AnalyticsModule } from "./analytics/analytics.module";
 import { PublicApplyModule } from "./public-apply/public-apply.module";
+import { AgenticModule } from "./agentic/agentic.module";
+import { AdminModule } from "./admin/admin.module";
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { PublicApplyModule } from "./public-apply/public-apply.module";
     TeamsModule,
     AnalyticsModule,
     PublicApplyModule,
+    AgenticModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

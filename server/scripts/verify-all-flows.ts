@@ -44,12 +44,18 @@ function record(flow: string, fn: () => Promise<void>) {
 async function main() {
   const owner = new Client();
   const recruiter = new Client();
+  const outsider = new Client();
+  const viewer = new Client();
+  const admin = new Client();
   const suffix = Date.now();
   const ownerEmail = `audit-owner-${suffix}@aijob.local`;
   const recruiterEmail = `audit-recruiter-${suffix}@aijob.local`;
 
   let orgId = "";
   let jobId = "";
+  let candidateId = "";
+  let draftJobId = "";
+  let publicToken = "";
   let applicationId = "";
   let scoreSource = "";
   let evidenceSource = "";
@@ -138,6 +144,7 @@ async function main() {
       resumeText:
         "Built Node.js and TypeScript services with PostgreSQL schemas.\nImplemented REST API and JWT authentication in NestJS.",
     });
+    candidateId = candidate.id;
     const applied = await owner.expect<{ id: string }>("/candidates/apply", "POST", {
       candidateId: candidate.id,
       jobId,
@@ -223,6 +230,7 @@ async function main() {
   await record("PUBLIC APPLY (unauthenticated)", async () => {
     const detail = await owner.expect<{ publicToken: string }>(`/jobs/${jobId}`);
     assert.ok(detail.publicToken);
+    publicToken = detail.publicToken;
     const publicClient = new Client();
     const created = await publicClient.expect<{ applicationId: string }>(
       `/public/apply/${detail.publicToken}`,
@@ -238,7 +246,6 @@ async function main() {
   });
 
   await record("CROSS-TENANT ISOLATION", async () => {
-    const outsider = new Client();
     await outsider.expect("/auth/register", "POST", {
       email: `outsider-${suffix}@aijob.local`,
       password: "password123",
@@ -251,6 +258,157 @@ async function main() {
     assert.equal(jobs.length, 0);
     const result = await outsider.call(`/jobs/${jobId}`);
     assert.equal(result.status, 404);
+  });
+
+  await record("AGENTIC: job-post draft -> create -> close/reopen", async () => {
+    const draft = await owner.expect<{
+      title: string;
+      description: string;
+      requirements: string;
+      source: string;
+    }>("/jobs/generate", "POST", {
+      brief: "Senior Backend Engineer\nNestJS REST APIs; PostgreSQL schema design; JWT authentication.",
+    });
+    assert.ok(draft.title.length > 1 && draft.description.length > 10 && draft.requirements.length > 10);
+    assert.ok(["zai", "deterministic"].includes(draft.source));
+    const created = await owner.expect<{ id: string; publicToken: string; source: string }>("/jobs", "POST", {
+      title: draft.title,
+      description: draft.description,
+      requirements: draft.requirements,
+      source: draft.source,
+    });
+    draftJobId = created.id;
+    assert.equal(created.source, draft.source);
+    const closed = await owner.expect<{ status: string }>(`/jobs/${draftJobId}/status`, "PATCH", { status: "closed" });
+    assert.equal(closed.status, "closed");
+    const hidden = await owner.expect<{ status: string; title: string }>(`/public/jobs/${created.publicToken}`);
+    assert.equal(hidden.status, "closed");
+    assert.ok(hidden.title.length > 0);
+    const reopened = await owner.expect<{ status: string }>(`/jobs/${draftJobId}/status`, "PATCH", { status: "open" });
+    assert.equal(reopened.status, "open");
+  });
+
+  await record("PUBLIC JOB DETAIL (unauthenticated)", async () => {
+    const detail = await new Client().expect<{ title: string; company: string; requirements: string }>(
+      `/public/jobs/${publicToken}`,
+    );
+    assert.ok(detail.title && detail.company && detail.requirements);
+    const missing = await new Client().call("/public/jobs/does-not-exist");
+    assert.equal(missing.status, 404);
+  });
+
+  await record("AGENTIC: CV generate / view / version", async () => {
+    const first = await owner.expect<{ version: number; content: string; source: string }>(
+      `/candidates/${candidateId}/cv/generate`,
+      "POST",
+    );
+    assert.equal(first.version, 1);
+    assert.ok(first.content.length > 50);
+    assert.ok(["zai", "deterministic"].includes(first.source));
+    const detail = await owner.expect<{ cvs: Array<{ id: string; version: number }> }>(
+      `/candidates/${candidateId}`,
+    );
+    assert.ok(detail.cvs.length >= 1);
+    const second = await owner.expect<{ version: number }>(`/candidates/${candidateId}/cv/generate`, "POST");
+    assert.equal(second.version, 2);
+  });
+
+  await record("DECISION: offer / reject / hire with notification", async () => {
+    const offer = await owner.expect<{ stage: string; status: string }>(
+      `/pipeline/applications/${applicationId}/decision`,
+      "POST",
+      { decision: "offer", message: "Please check your inbox." },
+    );
+    assert.equal(offer.stage, "offer");
+    assert.equal(offer.status, "offer_sent");
+    const rejected = await owner.expect<{ status: string }>(
+      `/pipeline/applications/${applicationId}/decision`,
+      "POST",
+      { decision: "reject" },
+    );
+    assert.equal(rejected.status, "rejected");
+    const hired = await owner.expect<{ stage: string; status: string }>(
+      `/pipeline/applications/${applicationId}/decision`,
+      "POST",
+      { decision: "hire" },
+    );
+    assert.equal(hired.stage, "hired");
+    assert.equal(hired.status, "hired");
+    const notifications = await owner.expect<Array<{ subject: string; body: string }>>(
+      "/pipeline/notifications",
+    );
+    assert.ok(notifications.some((item) => item.subject.startsWith("Offer for")));
+    assert.ok(notifications.some((item) => item.subject.startsWith("Welcome to the team")));
+    const timeline = await owner.expect<Array<{ type: string }>>(
+      `/pipeline/applications/${applicationId}/timeline`,
+    );
+    assert.ok(timeline.some((item) => item.type === "decision_hired"));
+  });
+
+  await record("CROSS-TENANT: new private endpoints stay isolated", async () => {
+    const cv = await outsider.call(`/candidates/${candidateId}/cv/generate`, "POST");
+    assert.equal(cv.status, 404);
+    const decision = await outsider.call(`/pipeline/applications/${applicationId}/decision`, "POST", {
+      decision: "hire",
+    });
+    assert.equal(decision.status, 404);
+    const status = await outsider.call(`/jobs/${draftJobId}/status`, "PATCH", { status: "closed" });
+    assert.equal(status.status, 404);
+    const stillOpen = await owner.expect<{ id: string }>(`/jobs/${draftJobId}`);
+    assert.equal(stillOpen.id, draftJobId);
+  });
+
+  await record("ADMIN: platform role, cross-tenant reads and self-demotion guard", async () => {
+    await admin.expect("/auth/login", "POST", {
+      email: "admin@aijob.local",
+      password: "admin12345",
+    });
+    const me = await admin.expect<{ systemRole: string }>("/auth/me");
+    assert.equal(me.systemRole, "PLATFORM_ADMIN");
+    const overview = await admin.expect<{ totals: Record<string, number> }>("/admin/overview");
+    assert.ok(overview.totals.organizations >= 1 && overview.totals.users >= 1);
+    const orgs = await admin.expect<Array<{ id: string }>>("/admin/organizations");
+    assert.ok(orgs.length >= 1);
+    const users = await admin.expect<Array<{ id: string; email: string }>>("/admin/users");
+    assert.ok(users.some((item) => item.email === "admin@aijob.local"));
+    const audit = await admin.expect<Array<{ type: string }>>("/admin/audit");
+    assert.ok(Array.isArray(audit));
+    const denied = await owner.call("/admin/overview");
+    assert.equal(denied.status, 403);
+    const self = users.find((item) => item.email === "admin@aijob.local")!;
+    const demote = await admin.call(`/admin/users/${self.id}/system-role`, "PATCH", {
+      systemRole: "USER",
+    });
+    assert.equal(demote.status, 400);
+  });
+
+  await record("ABAC: viewer is read-only within the organization", async () => {
+    const viewerEmail = `audit-viewer-${suffix}@aijob.local`;
+    const invite = await owner.expect<{ token: string }>("/teams/invite", "POST", {
+      email: viewerEmail,
+      role: "VIEWER",
+    });
+    await viewer.expect("/auth/register", "POST", {
+      email: viewerEmail,
+      password: "password123",
+      name: "Audit Viewer",
+    });
+    await viewer.expect("/invitations/accept", "POST", { token: invite.token });
+    await viewer.expect("/organizations/switch", "POST", { organizationId: orgId });
+    const role = await viewer.expect<{ role: string }>("/teams/my-role");
+    assert.equal(role.role, "VIEWER");
+    const jobs = await viewer.call("/jobs");
+    assert.equal(jobs.status, 200);
+    const draft = await viewer.call("/jobs/generate", "POST", {
+      brief: "Create a viewer permission test role with clear requirements.",
+    });
+    assert.equal(draft.status, 403);
+    const cv = await viewer.call(`/candidates/${candidateId}/cv/generate`, "POST");
+    assert.equal(cv.status, 403);
+    const decision = await viewer.call(`/pipeline/applications/${applicationId}/decision`, "POST", {
+      decision: "hire",
+    });
+    assert.equal(decision.status, 403);
   });
 
   report.push({

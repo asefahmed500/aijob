@@ -61,7 +61,7 @@ export default function RegisterPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
-            <Button type="submit" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
+            <Button type="submit" loading={busy}>Create account</Button>
             <p className="text-sm text-muted-foreground">
               Already registered? <Link className="underline" href="/login">Sign in</Link>
             </p>

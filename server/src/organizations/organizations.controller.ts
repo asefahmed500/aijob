@@ -5,23 +5,28 @@ import { CurrentUser, AuthenticatedUser } from "../common/decorators/current-use
 import { OrgGuard, OrgId } from "./org-context";
 import { OrganizationsService } from "./organizations.service";
 import { CreateOrganizationDto, SwitchOrganizationDto } from "./dto/organization.dto";
+import { Policy } from "../auth/abac/policy.decorator";
+import { RolesGuard } from "./roles";
 
 @Controller("organizations")
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class OrganizationsController {
   constructor(private readonly organizations: OrganizationsService) {}
 
   @Get()
+  @Policy("organization", "read")
   list(@CurrentUser() user: AuthenticatedUser) {
     return this.organizations.listForUser(user.userId);
   }
 
   @Post()
+  @Policy("organization", "create")
   create(@CurrentUser() user: AuthenticatedUser, @Body() dto: CreateOrganizationDto) {
     return this.organizations.create(user.userId, dto.name);
   }
 
   @Post("switch")
+  @Policy("organization", "switch")
   async switch(
     @CurrentUser() user: AuthenticatedUser,
     @Body() dto: SwitchOrganizationDto,
@@ -39,12 +44,14 @@ export class OrganizationsController {
   }
 
   @Get("current")
+  @Policy("organization", "read")
   @UseGuards(OrgGuard)
   current(@OrgId() organizationId: string) {
     return this.organizations.current(organizationId);
   }
 
   @Get("members")
+  @Policy("organization", "read")
   @UseGuards(OrgGuard)
   members(@OrgId() organizationId: string) {
     return this.organizations.members(organizationId);

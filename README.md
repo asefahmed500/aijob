@@ -1,6 +1,6 @@
 # aijob
 
-Evidence-grounded cover letters. The application turns job-related emails into source-traceable evidence, generates a cover letter grounded only in that evidence, and exports it.
+Evidence-grounded cover letters and an AI-assisted hiring workspace. Candidates turn job-related emails into source-traceable evidence, generate a grounded cover letter and export it. Companies create isolated organizations, draft and publish jobs, score applicants against quoted resume evidence, generate structured CVs, and record offer/reject/hire decisions with candidate notifications.
 
 ## Architecture
 
@@ -10,6 +10,17 @@ Evidence-grounded cover letters. The application turns job-related emails into s
 - `docs/engineering-evidence/` — verified engineering record for interview preparation.
 
 The browser never sees AI or SMTP credentials. All external calls happen in the NestJS backend.
+
+## End-to-end workflows
+
+- **Candidate:** `/dashboard` → `/applications/[id]` → emails → quoted evidence → cover letter → export.
+- **Employer:** `/org` (create/switch tenant) → `/org/jobs` (AI draft, create, publish, close/reopen) → public `/apply/[token]` → `/org/jobs/[id]` (score) → `/org/candidates/[id]` (CV, stage, decision) → `/org/candidates/[id]/cv` (print) → `/org/notifications` (message audit).
+- **Platform admin:** `/admin` → cross-tenant overview, organization list, user platform roles and audit log.
+- Every AI record stores `source` (`zai` or `deterministic`). Scores, evidence and CV items must be verbatim substrings of the source text.
+- Signed-in pages share an app shell built with shadcn `Sidebar`: grouped workspace/personal/admin navigation, organization switcher, breadcrumb topbar, role badge and user menu. Links and quick actions are limited by the active role; viewers see a read-only shell.
+- Buttons come from one shadcn `Button` with `default/primary`, `secondary`, `outline`, `ghost`, `destructive`, `link`, `soft` and icon sizes, consistent min-widths, compact radius, hover/press/focus transitions, inline-end arrow motion and a `loading` prop that renders a spinner, sets `aria-busy` and blocks duplicate submissions.
+
+The gap audit that drove these workflows is recorded in `docs/engineering-evidence/WORKFLOW_GAP_AUDIT.md`.
 
 ## Local setup
 
@@ -37,21 +48,29 @@ In a second terminal:
 npm run dev            # frontend on http://localhost:3000 (or next free port)
 ```
 
-Demo login: `demo@aijob.local` / `demo12345` (seeded by `prisma/seed.ts`).
+Demo logins (seeded by `prisma/seed.ts`):
+
+- Candidate/recruiter owner: `demo@aijob.local` / `demo12345`
+- Platform admin: `admin@aijob.local` / `admin12345`
+
+Platform admins can read across tenants at `/admin`; organization roles are `OWNER`, `RECRUITER` and `VIEWER`. All org-scoped mutating endpoints are guarded by RBAC + ABAC policies; viewers are read-only.
 
 ## Verification
 
 ```bash
 cd server
-npm test                       # unit tests for parser and validators
+npm test                       # unit tests for parser, validators and deterministic AI helpers
 npx ts-node scripts/verify-demo.ts   # end-to-end HTTP check over seeded data
+npx ts-node scripts/verify-all-flows.ts  # full SaaS + agentic flow audit (needs the API running)
 ```
 
-`verify-demo.ts` asserts that every evidence quote exists in its source email, that letter claims reference valid evidence ids, and that all four export channels return non-empty artifacts.
+`verify-demo.ts` asserts that every evidence quote exists in its source email, that letter claims reference valid evidence ids, and that all four export channels return non-empty artifacts. `verify-all-flows.ts` also checks AI job drafts, job status changes, public job detail, CV versions, offer/reject/hire decisions, notifications and cross-tenant isolation for the new endpoints.
 
 ## Configuration
 
-Secrets live in git-ignored `.env` files. Relevant variables: `DATABASE_URL`, `JWT_SECRET`, `PORT`, `ZAI_API_KEY` (or `NEXT_ZAI_API_kEY`), `ZAI_MODEL`, `ZAI_BASE_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `FRONTEND_URL`.
+Secrets live in git-ignored `.env` files. Relevant variables: `DATABASE_URL`, `JWT_SECRET`, `PORT`, `ZAI_API_KEY` (or `NEXT_ZAI_API_kEY`), `ZAI_MODEL`, `ZAI_BASE_URL`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`, `FRONTEND_URL`, `NOTIFICATIONS_ENABLED`.
+
+Candidate notifications are always recorded in `NotificationLog`. Set `NOTIFICATIONS_ENABLED=true` together with valid SMTP credentials to actually deliver them.
 
 If the configured Z.ai key is invalid or has no balance, extraction and generation automatically use a deterministic fallback. Each record stores its `source` so AI-generated and fallback content are distinguishable.
 

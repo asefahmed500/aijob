@@ -54,7 +54,7 @@ export default function AcceptInvitationPage({ params }: Props) {
             <Field><FieldLabel htmlFor="password">Password</FieldLabel><Input id="password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} /></Field>
           </FieldGroup>
           {error ? <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
-          <Button onClick={accept} disabled={busy || !email || !password}>{busy ? "Joining…" : "Accept invitation"}</Button>
+          <Button onClick={accept} loading={busy} disabled={!email || !password}>Accept invitation</Button>
           <Link className={buttonVariants({ variant: "ghost" })} href="/login">I already have an account</Link>
         </CardContent>
       </Card>

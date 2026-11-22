@@ -33,7 +33,7 @@ export class AuthService {
         passwordHash,
       },
     });
-    return this.buildSession(user.id, user.email, user.name);
+    return this.buildSession(user.id, user.email, user.name, user.systemRole);
   }
 
   async login(dto: LoginDto) {
@@ -47,13 +47,13 @@ export class AuthService {
     if (!matches) {
       throw new UnauthorizedException("Invalid email or password");
     }
-    return this.buildSession(user.id, user.email, user.name);
+    return this.buildSession(user.id, user.email, user.name, user.systemRole);
   }
 
   async me(userId: string) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, email: true, name: true, createdAt: true },
+      select: { id: true, email: true, name: true, systemRole: true, createdAt: true },
     });
     if (!user) {
       throw new UnauthorizedException("Account no longer exists");
@@ -61,11 +61,16 @@ export class AuthService {
     return user;
   }
 
-  private buildSession(id: string, email: string, name: string | null) {
-    const token = this.jwt.sign({ sub: id, email });
+  private buildSession(
+    id: string,
+    email: string,
+    name: string | null,
+    systemRole: string,
+  ) {
+    const token = this.jwt.sign({ sub: id, email, systemRole });
     return {
       accessToken: token,
-      user: { id, email, name },
+      user: { id, email, name, systemRole },
     };
   }
 }

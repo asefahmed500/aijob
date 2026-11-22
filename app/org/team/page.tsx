@@ -9,6 +9,8 @@ import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Empty, EmptyDescription, EmptyHeader, EmptyTitle } from "@/components/ui/empty";
+import { useOrgRole } from "@/components/auth/role-context";
 
 export default function TeamPage() {
   const [members, setMembers] = useState<Member[]>([]);
@@ -18,6 +20,9 @@ export default function TeamPage() {
   const [role, setRole] = useState("RECRUITER");
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const { canWrite, isOwner } = useOrgRole();
+  const [inviting, setInviting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -37,6 +42,7 @@ export default function TeamPage() {
   async function invite(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setInviting(true);
     try {
       const created = await api.inviteMember(email, role);
       setStatus(`Invitation created. Token: ${created.token}`);
@@ -44,6 +50,8 @@ export default function TeamPage() {
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not invite member");
+    } finally {
+      setInviting(false);
     }
   }
 
@@ -59,11 +67,14 @@ export default function TeamPage() {
 
   async function remove(userId: string) {
     setError(null);
+    setRemovingId(userId);
     try {
       await api.removeMember(userId);
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not remove member");
+    } finally {
+      setRemovingId(null);
     }
   }
 
@@ -77,7 +88,7 @@ export default function TeamPage() {
         {error ? <Alert variant="destructive"><AlertTitle>Error</AlertTitle><AlertDescription>{error}</AlertDescription></Alert> : null}
         {status ? <Alert><AlertTitle>Invitation ready</AlertTitle><AlertDescription>{status}</AlertDescription></Alert> : null}
 
-        {myRole === "OWNER" || myRole === "RECRUITER" ? (
+        {canWrite ? (
           <Card>
             <CardHeader><CardTitle>Invite a teammate</CardTitle><CardDescription>The invitee signs in with the same email, then accepts the token.</CardDescription></CardHeader>
             <CardContent>
@@ -95,7 +106,7 @@ export default function TeamPage() {
                     </Select>
                   </Field>
                 </FieldGroup>
-                <Button type="submit">Invite</Button>
+                <Button type="submit" loading={inviting}>Invite</Button>
               </form>
             </CardContent>
           </Card>
@@ -112,7 +123,7 @@ export default function TeamPage() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Badge variant="secondary">{member.role}</Badge>
-                  {myRole === "OWNER" && member.role !== "OWNER" ? (
+                  {isOwner && member.role !== "OWNER" ? (
                     <>
                       <Select value={member.role} onValueChange={(value) => changeRole(member.id, String(value))}>
                         <SelectTrigger className="w-36"><SelectValue>{member.role}</SelectValue></SelectTrigger>
@@ -121,7 +132,7 @@ export default function TeamPage() {
                           <SelectItem value="VIEWER">VIEWER</SelectItem>
                         </SelectGroup></SelectContent>
                       </Select>
-                      <Button size="sm" variant="destructive" onClick={() => remove(member.id)}>Remove</Button>
+                      <Button size="sm" variant="destructive" onClick={() => remove(member.id)} loading={removingId === member.id}>Remove</Button>
                     </>
                   ) : null}
                 </div>
@@ -133,6 +144,14 @@ export default function TeamPage() {
         <Card>
           <CardHeader><CardTitle>Pending invitations</CardTitle></CardHeader>
           <CardContent className="flex flex-col gap-2">
+            {invitations.length === 0 ? (
+              <Empty>
+                <EmptyHeader>
+                  <EmptyTitle>No pending invitations</EmptyTitle>
+                  <EmptyDescription>Invite a teammate to see them here.</EmptyDescription>
+                </EmptyHeader>
+              </Empty>
+            ) : null}
             {invitations.map((invitation) => (
               <div key={invitation.id} className="flex flex-wrap items-center justify-between gap-2 border-b py-2 last:border-b-0">
                 <span className="text-sm">{invitation.email}</span>

@@ -6,7 +6,10 @@ import { AppModule } from "./app.module";
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create(AppModule);
   app.use(cookieParser());
-  const allowedOrigins = (process.env.FRONTEND_URL ?? "http://localhost:3000,http://localhost:3001")
+  const allowedOrigins = (
+    process.env.FRONTEND_URL ??
+    "http://localhost:3000,http://localhost:3001,http://localhost:3010"
+  )
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);

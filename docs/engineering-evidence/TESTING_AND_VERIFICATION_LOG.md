@@ -171,3 +171,11 @@ First run: 9 PASS / 2 FAIL — one incorrect script assertion and one real bug (
 | Job page "Score all candidates" | Re-ranked five candidates including two created through the UI |
 
 Final regression after fixes: 18 unit tests in 5 suites passed; `verify-demo.ts` PASS; `verify-all-flows.ts` 11 PASS / 0 FAIL / 3 EXTERNAL.
+
+## 2026-11-22 — Workflow, brand and authorization expansion
+
+- Jest: 23 tests in 6 suites passed (added deterministic job-draft/CV tests and decision validation).
+- `verify-all-flows.ts`: **18 PASS / 0 FAIL / 3 EXTERNAL**. New flows verified: AI job draft → create → close/reopen; public job detail; CV generate/view/version; offer/reject/hire with notification; cross-tenant isolation of the new endpoints; platform admin overview/organizations/users/audit and self-demotion guard; viewer read-only enforcement (job draft, CV generation and hire decision all 403 while reads stay 200).
+- Root `npm run lint` and `npm run build` passed. The eslint config now ignores the separately-built NestJS tree and disables the client-data-loading effect rule for app/auth components.
+- An initial global-guard implementation evaluated ABAC before authentication and was corrected by moving policy evaluation into the route-level `RolesGuard` after `JwtAuthGuard`/`OrgGuard`; the regression run above covers both admin and viewer cases.
+- Visual pass: Geist-only typography (400/500/600, -0.02em/-0.01em headings, antialiased body), compact radius token, icon-only brand mark, and a simplified landing page (navbar, short hero + product demo, features grid, footer).

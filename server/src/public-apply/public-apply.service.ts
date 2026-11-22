@@ -6,6 +6,23 @@ import { PublicApplyDto } from "./dto/public-apply.dto";
 export class PublicApplyService {
   constructor(private readonly prisma: PrismaService) {}
 
+  async getJob(token: string) {
+    if (!token) throw new NotFoundException("Job link not found");
+    const job = await this.prisma.jobPost.findFirst({
+      where: { publicToken: token },
+      include: { organization: { select: { name: true } } },
+    });
+    if (!job) throw new NotFoundException("Job link not found");
+    return {
+      id: job.id,
+      title: job.title,
+      description: job.description,
+      requirements: job.requirements,
+      status: job.status,
+      company: job.organization.name,
+    };
+  }
+
   async apply(token: string, dto: PublicApplyDto) {
     if (!token) throw new NotFoundException("Job link not found");
     const job = await this.prisma.jobPost.findFirst({ where: { publicToken: token } });

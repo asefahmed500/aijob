@@ -12,6 +12,7 @@ model User {
   email        String        @unique
   name         String?
   passwordHash String
+  systemRole   String        @default("USER")
   createdAt    DateTime      @default(now())
   applications Application[]
   memberships  Membership[]
@@ -49,6 +50,7 @@ model JobPost {
   requirements   String
   status         String                 @default("open")
   publicToken    String?
+  source         String                 @default("manual")
   createdAt      DateTime               @default(now())
   applications   CandidateApplication[]
 
@@ -65,8 +67,27 @@ model Candidate {
   source         String                 @default("manual")
   createdAt      DateTime               @default(now())
   applications   CandidateApplication[]
+  cvs            CandidateCv[]
 
   @@index([organizationId])
+}
+
+model CandidateCv {
+  id          String    @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  headline    String
+  summary     String
+  skills      String
+  experience  String
+  education   String
+  content     String
+  source      String    @default("deterministic")
+  model       String
+  version     Int       @default(1)
+  createdAt   DateTime  @default(now())
+
+  @@index([candidateId])
 }
 
 model CandidateApplication {

@@ -7,10 +7,17 @@ import {
 } from "@nestjs/common";
 import { Reflector } from "@nestjs/core";
 import { PrismaService } from "../prisma/prisma.service";
+import { POLICY_KEY, type PolicyRequirement } from "../auth/abac/policy.decorator";
+import { evaluatePolicy } from "../auth/abac/policies";
 
 export const ROLES_KEY = "org_roles";
 export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
 
+/**
+ * Route-level authorization guard. Runs after JwtAuthGuard and OrgGuard so it
+ * can evaluate both explicit org roles and ABAC policy metadata using the
+ * authenticated subject, the active tenant and resource attributes.
+ */
 @Injectable()
 export class RolesGuard implements CanActivate {
   constructor(
@@ -23,19 +30,53 @@ export class RolesGuard implements CanActivate {
       context.getHandler(),
       context.getClass(),
     ]);
-    if (!required || required.length === 0) return true;
+    const policy = this.reflector.getAllAndOverride<PolicyRequirement>(POLICY_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    if (!required?.length && !policy) return true;
 
     const request = context.switchToHttp().getRequest();
-    const userId = request.user?.userId as string | undefined;
+    const user = request.user as
+      | { userId: string; systemRole?: string }
+      | undefined;
     const organizationId = request.orgId as string | undefined;
-    if (!userId || !organizationId) throw new ForbiddenException("Organization context required");
+    if (!user) throw new ForbiddenException("Authentication required");
 
-    const membership = await this.prisma.membership.findUnique({
-      where: { userId_organizationId: { userId, organizationId } },
-    });
-    if (!membership || !required.includes(membership.role)) {
+    if (user.systemRole === "PLATFORM_ADMIN") return true;
+
+    let orgRole: string | null = null;
+    if (organizationId) {
+      const membership = await this.prisma.membership.findUnique({
+        where: {
+          userId_organizationId: {
+            userId: user.userId,
+            organizationId,
+          },
+        },
+        select: { role: true },
+      });
+      orgRole = membership?.role ?? null;
+    }
+
+    if (required?.length && (!orgRole || !required.includes(orgRole))) {
       throw new ForbiddenException("Insufficient role for this action");
     }
+
+    if (policy) {
+      const isSelf = Boolean(
+        request.params?.userId && request.params.userId === user.userId,
+      );
+      const allowed = evaluatePolicy({
+        systemRole: user.systemRole ?? "USER",
+        orgRole,
+        resource: policy.resource,
+        action: policy.action,
+        isSelf,
+      });
+      if (!allowed) throw new ForbiddenException("Insufficient permissions for this action");
+    }
+
     return true;
   }
 }

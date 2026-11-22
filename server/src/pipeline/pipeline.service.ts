@@ -60,6 +60,83 @@ export class PipelineService {
     return updated;
   }
 
+  /**
+   * Records an explicit hiring decision, moves the application, and notifies the
+   * candidate. Reuses the existing status/stage and NotificationLog records.
+   */
+  async decide(
+    organizationId: string,
+    applicationId: string,
+    actorId: string,
+    decision: "offer" | "reject" | "hire",
+    message?: string,
+  ) {
+    const application = await this.load(organizationId, applicationId);
+    const jobTitle = application.job.title;
+    const organization = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+    const company = organization?.name ?? "our team";
+
+    const plans = {
+      offer: {
+        stage: "offer",
+        status: "offer_sent",
+        eventType: "decision_offer",
+        subject: `Offer for ${jobTitle} at ${company}`,
+        defaultBody: `We are pleased to offer you the ${jobTitle} role at ${company}. Please check your email for the next steps.`,
+      },
+      reject: {
+        stage: "rejected",
+        status: "rejected",
+        eventType: "decision_rejected",
+        subject: `Update on your application for ${jobTitle}`,
+        defaultBody: `Thank you for your interest in the ${jobTitle} role at ${company}. We have decided to move forward with other candidates.`,
+      },
+      hire: {
+        stage: "hired",
+        status: "hired",
+        eventType: "decision_hired",
+        subject: `Welcome to the team — ${jobTitle}`,
+        defaultBody: `We are delighted to confirm your hire for the ${jobTitle} role at ${company}. Our team will be in touch with onboarding details.`,
+      },
+    } as const;
+    const plan = plans[decision];
+
+    const updated = await this.prisma.candidateApplication.update({
+      where: { id: applicationId },
+      data: { stage: plan.stage, status: plan.status },
+    });
+
+    await this.prisma.activityEvent.create({
+      data: {
+        organizationId,
+        applicationId,
+        actorId,
+        type: plan.eventType,
+        message: `Decision recorded: ${decision}${message ? ` — ${message}` : ""}`,
+      },
+    });
+
+    const notification = await this.notify(
+      organizationId,
+      applicationId,
+      application.candidate.email,
+      plan.subject,
+      message?.trim() || plan.defaultBody,
+    );
+
+    return {
+      id: updated.id,
+      stage: updated.stage,
+      status: updated.status,
+      decision,
+      notificationId: notification.id,
+      notificationStatus: notification.status,
+    };
+  }
+
   async addNote(organizationId: string, applicationId: string, actorId: string, body: string) {
     await this.load(organizationId, applicationId);
     const note = await this.prisma.candidateNote.create({

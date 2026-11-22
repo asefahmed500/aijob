@@ -40,6 +40,7 @@ export interface User {
   id: string;
   email: string;
   name: string | null;
+  systemRole: "USER" | "PLATFORM_ADMIN";
 }
 
 export interface ApplicationSummary {
@@ -110,6 +111,27 @@ export const api = {
     }),
   logout: () => request<{ ok: boolean }>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
+
+  // Platform administration (PLATFORM_ADMIN only)
+  adminOverview: () =>
+    request<{ totals: Record<string, number> }>("/admin/overview"),
+  adminOrganizations: () =>
+    request<Array<{ id: string; name: string; slug: string; members: number; jobs: number; candidates: number; roles: string[] }>>(
+      "/admin/organizations",
+    ),
+  adminUsers: () =>
+    request<Array<{ id: string; email: string; name: string | null; systemRole: string; organizations: number }>>(
+      "/admin/users",
+    ),
+  adminAudit: () =>
+    request<Array<{ id: string; type: string; message: string; organization: string; createdAt: string }>>(
+      "/admin/audit",
+    ),
+  setSystemRole: (userId: string, systemRole: "USER" | "PLATFORM_ADMIN") =>
+    request<{ id: string; email: string; systemRole: string }>(`/admin/users/${userId}/system-role`, {
+      method: "PATCH",
+      body: JSON.stringify({ systemRole }),
+    }),
   listApplications: () => request<ApplicationSummary[]>("/applications"),
   createApplication: (company: string, role: string) =>
     request<ApplicationSummary>("/applications", {
@@ -172,10 +194,20 @@ export const api = {
     request<Array<{ id: string; title: string; status: string; createdAt: string; _count: { applications: number } }>>(
       "/jobs",
     ),
-  createJob: (title: string, description: string, requirements: string) =>
-    request<{ id: string; title: string }>("/jobs", {
+  createJob: (title: string, description: string, requirements: string, source?: string) =>
+    request<{ id: string; title: string; source: string }>("/jobs", {
       method: "POST",
-      body: JSON.stringify({ title, description, requirements }),
+      body: JSON.stringify({ title, description, requirements, source }),
+    }),
+  generateJobDraft: (brief: string) =>
+    request<JobDraft>("/jobs/generate", {
+      method: "POST",
+      body: JSON.stringify({ brief }),
+    }),
+  updateJobStatus: (id: string, status: "open" | "closed") =>
+    request<{ id: string; status: string }>(`/jobs/${id}/status`, {
+      method: "PATCH",
+      body: JSON.stringify({ status }),
     }),
   getJob: (id: string) => request<JobDetail>(`/jobs/${id}`),
   listCandidates: () =>
@@ -199,6 +231,11 @@ export const api = {
     }),
 
   // Hiring pipeline
+  decideApplication: (applicationId: string, decision: "offer" | "reject" | "hire", message?: string) =>
+    request<DecisionResult>(`/pipeline/applications/${applicationId}/decision`, {
+      method: "POST",
+      body: JSON.stringify({ decision, message }),
+    }),
   updateStage: (applicationId: string, stage: string, rating?: number) =>
     request<{ id: string; stage: string; rating: number | null }>(
       `/pipeline/applications/${applicationId}/stage`,
@@ -223,6 +260,8 @@ export const api = {
       body: JSON.stringify({ applicationIds, stage }),
     }),
   getCandidate: (id: string) => request<CandidateDetail>(`/candidates/${id}`),
+  generateCv: (candidateId: string) =>
+    request<CvRecord>(`/candidates/${candidateId}/cv/generate`, { method: "POST" }),
   getNotifications: () =>
     request<Array<{ id: string; status: string; subject: string; recipient: string; createdAt: string }>>(
       "/pipeline/notifications",
@@ -260,6 +299,7 @@ export const api = {
     }),
 
   // Public apply
+  getPublicJob: (token: string) => request<PublicJob>(`/public/jobs/${token}`),
   publicApply: (token: string, data: { name: string; email: string; resumeText: string }) =>
     request<{ applicationId: string; jobTitle: string }>(`/public/apply/${token}`, {
       method: "POST",
@@ -273,9 +313,11 @@ export interface CandidateDetail {
   email: string;
   resumeText: string;
   source: string;
+  cvs: CvRecord[];
   applications: Array<{
     id: string;
     stage: string;
+    status: string;
     rating: number | null;
     job: { id: string; title: string };
     scores: ScoreDetail[];
@@ -349,6 +391,48 @@ export interface JobDetail {
   title: string;
   description: string;
   requirements: string;
+  status: string;
+  source: string;
   publicToken: string | null;
   applications: RankingEntry[];
+}
+
+export interface JobDraft {
+  title: string;
+  description: string;
+  requirements: string;
+  source: string;
+}
+
+export interface PublicJob {
+  id: string;
+  title: string;
+  description: string;
+  requirements: string;
+  status: string;
+  company: string;
+}
+
+export interface DecisionResult {
+  id: string;
+  stage: string;
+  status: string;
+  decision: "offer" | "reject" | "hire";
+  notificationId: string;
+  notificationStatus: string;
+}
+
+export interface CvRecord {
+  id: string;
+  candidateId: string;
+  headline: string;
+  summary: string;
+  skills: string;
+  experience: string;
+  education: string;
+  content: string;
+  source: string;
+  model: string;
+  version: number;
+  createdAt: string;
 }

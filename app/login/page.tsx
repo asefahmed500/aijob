@@ -56,7 +56,7 @@ export default function LoginPage() {
                 <AlertDescription>{error}</AlertDescription>
               </Alert>
             ) : null}
-            <Button type="submit" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
+            <Button type="submit" loading={busy}>Sign in</Button>
             <p className="text-sm text-muted-foreground">
               No account? <Link className="underline" href="/register">Register</Link>
             </p>

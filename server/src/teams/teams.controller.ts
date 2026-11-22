@@ -14,6 +14,7 @@ import { OrgGuard, OrgId } from "../organizations/org-context";
 import { Roles, RolesGuard } from "../organizations/roles";
 import { TeamsService } from "./teams.service";
 import { InviteDto, UpdateRoleDto } from "./dto/team.dto";
+import { Policy } from "../auth/abac/policy.decorator";
 
 @Controller("teams")
 @UseGuards(JwtAuthGuard, OrgGuard, RolesGuard)
@@ -21,11 +22,13 @@ export class TeamsController {
   constructor(private readonly teams: TeamsService) {}
 
   @Get()
+  @Policy("team", "read")
   list(@OrgId() organizationId: string) {
     return this.teams.list(organizationId);
   }
 
   @Get("my-role")
+  @Policy("team", "read")
   async myRole(
     @OrgId() organizationId: string,
     @CurrentUser() user: AuthenticatedUser,
@@ -34,6 +37,7 @@ export class TeamsController {
   }
 
   @Post("invite")
+  @Policy("team", "create")
   @Roles("OWNER", "RECRUITER")
   invite(
     @OrgId() organizationId: string,
@@ -44,12 +48,14 @@ export class TeamsController {
   }
 
   @Delete("members/:userId")
+  @Policy("team", "delete")
   @Roles("OWNER")
   removeMember(@OrgId() organizationId: string, @Param("userId") userId: string) {
     return this.teams.removeMember(organizationId, userId);
   }
 
   @Patch("members/:userId/role")
+  @Policy("team", "manage")
   @Roles("OWNER")
   updateRole(
     @OrgId() organizationId: string,

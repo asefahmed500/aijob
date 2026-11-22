@@ -1,10 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { AgenticService } from "../agentic/agentic.service";
 import { CreateCandidateDto } from "./dto/candidate.dto";
 
 @Injectable()
 export class CandidatesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly agentic: AgenticService,
+  ) {}
 
   list(organizationId: string) {
     return this.prisma.candidate.findMany({
@@ -44,8 +48,13 @@ export class CandidatesService {
             scores: { orderBy: { createdAt: "desc" }, include: { evidences: true } },
           },
         },
+        cvs: { orderBy: { version: "desc" } },
       },
     });
+  }
+
+  generateCv(organizationId: string, candidateId: string) {
+    return this.agentic.generateCv(organizationId, candidateId);
   }
 
   async apply(organizationId: string, candidateId: string, jobId: string) {

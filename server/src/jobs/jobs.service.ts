@@ -1,11 +1,15 @@
 import { randomUUID } from "node:crypto";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
+import { AgenticService } from "../agentic/agentic.service";
 import { CreateJobDto } from "./dto/job.dto";
 
 @Injectable()
 export class JobsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly agentic: AgenticService,
+  ) {}
 
   list(organizationId: string) {
     return this.prisma.jobPost.findMany({
@@ -23,7 +27,20 @@ export class JobsService {
         description: dto.description.trim(),
         requirements: dto.requirements.trim(),
         publicToken: randomUUID(),
+        source: dto.source ?? "manual",
       },
+    });
+  }
+
+  draft(brief: string) {
+    return this.agentic.draftJobPost(brief);
+  }
+
+  async setStatus(organizationId: string, jobId: string, status: string) {
+    await this.findOwned(organizationId, jobId);
+    return this.prisma.jobPost.update({
+      where: { id: jobId },
+      data: { status },
     });
   }
 

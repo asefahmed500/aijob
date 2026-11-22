@@ -26,7 +26,7 @@ export default function WorkspacePage({ params }: Props) {
   const [recipient, setRecipient] = useState("");
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
   const refresh = useCallback(async (applicationId: string) => {
     try {
@@ -51,9 +51,9 @@ export default function WorkspacePage({ params }: Props) {
     });
   }, [params, refresh]);
 
-  async function run(label: string, task: () => Promise<void>, after?: () => void) {
+  async function run(label: string, task: () => Promise<void>, after?: () => void, key = "action") {
     if (!id) return;
-    setBusy(true);
+    setBusyKey(key);
     setStatus(label);
     setError(null);
     try {
@@ -63,7 +63,7 @@ export default function WorkspacePage({ params }: Props) {
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : "Unexpected error");
     } finally {
-      setBusy(false);
+      setBusyKey(null);
     }
   }
 
@@ -124,8 +124,9 @@ export default function WorkspacePage({ params }: Props) {
                     }}
                   />
                   <Button
-                    disabled={busy || rawEmail.trim().length < 10}
-                    onClick={() => run("Adding email…", async () => { await api.addEmail(id, rawEmail); setRawEmail(""); })}
+                    loading={busyKey === "email"}
+                    disabled={rawEmail.trim().length < 10}
+                    onClick={() => run("Adding email…", async () => { await api.addEmail(id, rawEmail); setRawEmail(""); }, undefined, "email")}
                   >
                     Add email
                   </Button>
@@ -154,11 +155,12 @@ export default function WorkspacePage({ params }: Props) {
               </CardHeader>
               <CardContent>
                 <Button
-                  disabled={busy || emails.length === 0}
+                  loading={busyKey === "extract"}
+                  disabled={emails.length === 0}
                   onClick={() => run("Extracting evidence…", async () => {
                     const result = await api.extractEvidence(id);
                     setStatus(`${result.accepted} accepted, ${result.rejected} rejected${result.usedFallback ? " (deterministic fallback)" : ""}`);
-                  })}
+                  }, undefined, "extract")}
                 >
                   Extract from {emails.length} email(s)
                 </Button>
@@ -182,10 +184,10 @@ export default function WorkspacePage({ params }: Props) {
                   <div className="flex gap-2">
                     <Button
                       size="sm"
-                      disabled={busy}
+                      loading={busyKey === `evidence-${item.id}`}
                       onClick={() => run("Updating evidence…", async () => {
                         await api.reviewEvidence(item.id, !item.approved);
-                      })}
+                      }, undefined, `evidence-${item.id}`)}
                     >
                       {item.approved ? "Unapprove" : "Approve"}
                     </Button>
@@ -203,11 +205,12 @@ export default function WorkspacePage({ params }: Props) {
               </CardHeader>
               <CardContent className="flex flex-wrap items-center gap-3">
                 <Button
-                  disabled={busy || evidence.filter((item) => item.approved).length === 0}
+                  loading={busyKey === "letter"}
+                  disabled={evidence.filter((item) => item.approved).length === 0}
                   onClick={() => run("Generating letter…", async () => {
                     const created = await api.generateLetter(id);
                     setLetter(created);
-                  })}
+                  }, undefined, "letter")}
                 >
                   Generate letter
                 </Button>
@@ -251,27 +254,30 @@ export default function WorkspacePage({ params }: Props) {
                 {!letter ? <p className="text-sm text-muted-foreground">Generate a letter first.</p> : null}
                 <div className="flex flex-wrap gap-2">
                   <Button
-                    disabled={!letter || busy}
+                    loading={busyKey === "markdown"}
+                    disabled={!letter}
                     onClick={() => run("Preparing Markdown…", async () => {
                       const artifact = await api.produceExport(id, letter!.id, "markdown");
                       download(artifact.content, artifact.filename, artifact.contentType, artifact.base64);
-                    })}
+                    }, undefined, "markdown")}
                   >
                     Markdown
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={!letter || busy}
+                    loading={busyKey === "docx"}
+                    disabled={!letter}
                     onClick={() => run("Preparing DOCX…", async () => {
                       const artifact = await api.produceExport(id, letter!.id, "docx");
                       download(artifact.content, artifact.filename, artifact.contentType, artifact.base64);
-                    })}
+                    }, undefined, "docx")}
                   >
                     DOCX
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={!letter || busy}
+                    loading={busyKey === "print"}
+                    disabled={!letter}
                     onClick={() => run("Preparing print view…", async () => {
                       const artifact = await api.produceExport(id, letter!.id, "print");
                       const printWindow = window.open("", "_blank");
@@ -280,18 +286,19 @@ export default function WorkspacePage({ params }: Props) {
                         printWindow.document.close();
                         printWindow.print();
                       }
-                    })}
+                    }, undefined, "print")}
                   >
                     Print / PDF
                   </Button>
                   <Button
                     variant="outline"
-                    disabled={!letter || busy}
+                    loading={busyKey === "clipboard"}
+                    disabled={!letter}
                     onClick={() => run("Copying…", async () => {
                       const artifact = await api.produceExport(id, letter!.id, "clipboard");
                       await navigator.clipboard.writeText(artifact.content);
                       setStatus("Letter copied to clipboard");
-                    })}
+                    }, undefined, "clipboard")}
                   >
                     Copy text
                   </Button>
@@ -311,11 +318,12 @@ export default function WorkspacePage({ params }: Props) {
                 </FieldGroup>
                 <Button
                   variant="secondary"
-                  disabled={!letter || !recipient || busy}
+                  loading={busyKey === "send"}
+                  disabled={!letter || !recipient}
                   onClick={() => run("Sending…", async () => {
                     await api.sendExport(id, letter!.id, recipient);
                     setStatus("Letter sent");
-                  })}
+                  }, undefined, "send")}
                 >
                   Send DOCX via SMTP
                 </Button>

@@ -9,6 +9,9 @@ const prisma = new PrismaClient({ adapter });
 const DEMO_EMAIL = "demo@aijob.local";
 const DEMO_PASSWORD_HASH =
   "$2b$10$s5a5PkPc5vPF6hS2789jUemTL8QUn62oBahpiUXu3xsamomrpEWDe"; // bcrypt of "demo12345"
+const ADMIN_EMAIL = "admin@aijob.local";
+const ADMIN_PASSWORD_HASH =
+  "$2b$10$7ck82uE.vkv60eyQo8OoR.3Y0.tHHQR7ahM2HlTYe6wZTnSASsZjG"; // bcrypt of "admin12345"
 
 const SAMPLE_EMAILS = [
   `From: careers@example-company.com\nSubject: Backend Engineer opportunity\nDate: 2026-11-10T09:00:00Z\n\nWe are looking for a Backend Engineer with strong experience in Node.js and PostgreSQL.\nRequired skills include REST API design, authentication, and database modeling.\nYou will work on AI-powered services and integrate external APIs.\nExperience with NestJS is a plus.`,
@@ -64,6 +67,23 @@ async function main() {
         name: "Demo Candidate",
         passwordHash: DEMO_PASSWORD_HASH,
       },
+    });
+  }
+
+  const admin = await prisma.user.findUnique({ where: { email: ADMIN_EMAIL } });
+  if (!admin) {
+    await prisma.user.create({
+      data: {
+        email: ADMIN_EMAIL,
+        name: "Platform Admin",
+        passwordHash: ADMIN_PASSWORD_HASH,
+        systemRole: "PLATFORM_ADMIN",
+      },
+    });
+  } else if (admin.systemRole !== "PLATFORM_ADMIN") {
+    await prisma.user.update({
+      where: { id: admin.id },
+      data: { systemRole: "PLATFORM_ADMIN" },
     });
   }
 

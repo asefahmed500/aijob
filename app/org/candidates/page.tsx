@@ -16,6 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { useOrgRole } from "@/components/auth/role-context";
 
 const STAGES = ["new", "screening", "interview", "offer", "rejected"];
 
@@ -33,6 +35,10 @@ export default function CandidatesPage() {
   const [resumeText, setResumeText] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
+  const { canWrite } = useOrgRole();
+  const [creatingCandidate, setCreatingCandidate] = useState(false);
+  const [applyingId, setApplyingId] = useState<string | null>(null);
+  const [bulking, setBulking] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -59,6 +65,7 @@ export default function CandidatesPage() {
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setCreatingCandidate(true);
     try {
       await api.createCandidate(name, email, resumeText);
       setName("");
@@ -68,6 +75,8 @@ export default function CandidatesPage() {
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not add candidate");
+    } finally {
+      setCreatingCandidate(false);
     }
   }
 
@@ -75,12 +84,15 @@ export default function CandidatesPage() {
     const target = jobId && jobId !== "all" ? jobId : jobs[0]?.id;
     if (!target) return;
     setError(null);
+    setApplyingId(candidateId);
     try {
       await api.applyCandidate(candidateId, target);
       setStatus("Candidate applied to job");
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not apply candidate");
+    } finally {
+      setApplyingId(null);
     }
   }
 
@@ -88,6 +100,7 @@ export default function CandidatesPage() {
     const ids = selected.filter((id) => rows.some((row) => row.application?.id === id));
     if (ids.length === 0) return;
     setError(null);
+    setBulking(true);
     try {
       await api.bulkStage(ids, bulkStage);
       setStatus(`${ids.length} candidates moved to ${bulkStage}`);
@@ -95,6 +108,8 @@ export default function CandidatesPage() {
       await load();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Bulk update failed");
+    } finally {
+      setBulking(false);
     }
   }
 
@@ -156,7 +171,7 @@ export default function CandidatesPage() {
               <SelectTrigger className="w-44"><SelectValue>{bulkStage}</SelectValue></SelectTrigger>
               <SelectContent><SelectGroup>{STAGES.map((item) => <SelectItem key={item} value={item}>{item}</SelectItem>)}</SelectGroup></SelectContent>
             </Select>
-            <Button onClick={runBulk} disabled={selected.length === 0}>Move selected</Button>
+            <Button onClick={runBulk} loading={bulking} disabled={selected.length === 0 || !canWrite}>Move selected</Button>
           </CardContent>
         </Card>
 
@@ -169,7 +184,7 @@ export default function CandidatesPage() {
                 <Field><FieldLabel htmlFor="email">Email</FieldLabel><Input id="email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} required /></Field>
                 <Field><FieldLabel htmlFor="resume">Resume text</FieldLabel><Textarea id="resume" value={resumeText} onChange={(event) => setResumeText(event.target.value)} required minLength={20} rows={6} /></Field>
               </FieldGroup>
-              <Button type="submit">Add candidate</Button>
+              <Button type="submit" loading={creatingCandidate} disabled={!canWrite}>Add candidate</Button>
             </form>
           </CardContent>
         </Card>
@@ -178,15 +193,14 @@ export default function CandidatesPage() {
           <Card key={row.id}>
             <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-6">
               <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
+                <Checkbox
                   aria-label={`Select ${row.name}`}
                   checked={row.application ? selected.includes(row.application.id) : false}
-                  disabled={!row.application}
-                  onChange={(event) => {
+                  disabled={!row.application || !canWrite}
+                  onCheckedChange={(checked) => {
                     if (!row.application) return;
                     setSelected((current) =>
-                      event.target.checked
+                      checked
                         ? [...current, row.application!.id]
                         : current.filter((item) => item !== row.application!.id),
                     );
@@ -201,7 +215,7 @@ export default function CandidatesPage() {
                 <Badge variant="secondary">{row.application?.score ?? 0}% match</Badge>
                 <Badge variant="outline">{row.application?.stage ?? "unapplied"}</Badge>
                 <Link className={buttonVariants({ variant: "ghost", size: "sm" })} href={`/org/candidates/${row.id}`}>Open</Link>
-                <Button size="sm" variant="outline" onClick={() => apply(row.id)}>Apply</Button>
+                <Button size="sm" variant="outline" onClick={() => apply(row.id)} loading={applyingId === row.id} disabled={!canWrite}>Apply</Button>
               </div>
             </CardContent>
           </Card>

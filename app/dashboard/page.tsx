@@ -19,6 +19,7 @@ export default function DashboardPage() {
   const [role, setRole] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -41,17 +42,15 @@ export default function DashboardPage() {
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setCreating(true);
     try {
       const created = await api.createApplication(company, role);
       router.push(`/applications/${created.id}`);
     } catch (cause) {
       setError(cause instanceof ApiError ? cause.message : "Could not create application");
+    } finally {
+      setCreating(false);
     }
-  }
-
-  async function logout() {
-    await api.logout();
-    router.push("/login");
   }
 
   return (
@@ -61,10 +60,6 @@ export default function DashboardPage() {
           <div className="flex flex-col gap-1">
             <h1 className="text-2xl font-semibold tracking-tight">Applications</h1>
             <p className="text-sm text-muted-foreground">Each application follows the same four-step workflow.</p>
-          </div>
-          <div className="flex gap-2">
-            <Link className={buttonVariants({ variant: "outline" })} href="/org">Organization</Link>
-            <Button variant="outline" onClick={logout}>Sign out</Button>
           </div>
         </div>
 
@@ -92,7 +87,7 @@ export default function DashboardPage() {
                   <Input id="role" value={role} onChange={(e) => setRole(e.target.value)} required />
                 </Field>
               </FieldGroup>
-              <Button type="submit">Create</Button>
+              <Button type="submit" loading={creating}>Create</Button>
             </form>
           </CardContent>
         </Card>

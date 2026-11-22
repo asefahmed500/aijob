@@ -22,6 +22,7 @@ export default function OrgOverviewPage() {
   const [current, setCurrent] = useState<{ name: string; _count: { jobs: number; candidates: number } } | null>(null);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -40,6 +41,7 @@ export default function OrgOverviewPage() {
   async function create(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
+    setCreating(true);
     try {
       const org = await api.createOrganization(name);
       await api.switchOrganization(org.id);
@@ -48,6 +50,8 @@ export default function OrgOverviewPage() {
       router.refresh();
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not create organization");
+    } finally {
+      setCreating(false);
     }
   }
 
@@ -86,7 +90,7 @@ export default function OrgOverviewPage() {
                   <Input id="org-name" value={name} onChange={(event) => setName(event.target.value)} required />
                 </Field>
               </FieldGroup>
-              <Button type="submit">Create</Button>
+              <Button type="submit" loading={creating}>Create</Button>
             </form>
           </CardContent>
         </Card>

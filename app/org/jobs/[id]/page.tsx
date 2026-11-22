@@ -59,9 +59,10 @@ export default function JobRankingPage({ params }: Props) {
             <p className="text-sm text-muted-foreground">Candidates ranked by quoted resume evidence.</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={scoreAll} disabled={busy || ranking.length === 0}>
-              {busy ? "Scoring…" : "Score all candidates"}
+            <Button onClick={scoreAll} loading={busy} disabled={ranking.length === 0}>
+              Score all candidates
             </Button>
+            {job?.status ? <Badge variant="outline">{job.status}</Badge> : null}
             {job?.publicToken ? (
               <Link className={buttonVariants({ variant: "outline" })} href={`/apply/${job.publicToken}`}>
                 Public apply link
