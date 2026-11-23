@@ -15,6 +15,7 @@ The browser never sees AI or SMTP credentials. All external calls happen in the 
 
 - **Candidate:** `/dashboard` → `/applications/[id]` → emails → quoted evidence → cover letter → export.
 - **Employer:** `/org` (create/switch tenant) → `/org/jobs` (AI draft, create, publish, close/reopen) → public `/apply/[token]` → `/org/jobs/[id]` (score) → `/org/candidates/[id]` (CV, stage, decision) → `/org/candidates/[id]/cv` (print) → `/org/notifications` (message audit).
+- **Public form:** while creating a job, add Google-Forms-style questions (short text, long text, URL; required or optional), set a link expiry date/time, and choose automatic AI screening. The generated public link can be copied and sent to candidates. `PATCH /jobs/:id/form` updates the questions, expiry or screening switch later. An expired link shows a clear state and rejects submissions. Required answers are validated server-side. Every answer is stored on the application, shown on the candidate detail page, and included verbatim in the scorer's source text, so evidence quotes remain traceable. Screening runs on submission by default but a failure never blocks the application.
 - **Platform admin:** `/admin` → cross-tenant overview, organization list, user platform roles and audit log.
 - Every AI record stores `source` (`zai` or `deterministic`). Scores, evidence and CV items must be verbatim substrings of the source text.
 - Signed-in pages share an app shell built with shadcn `Sidebar`: grouped workspace/personal/admin navigation, organization switcher, breadcrumb topbar, role badge and user menu. Links and quick actions are limited by the active role; viewers see a read-only shell.
@@ -62,9 +63,10 @@ cd server
 npm test                       # unit tests for parser, validators and deterministic AI helpers
 npx ts-node scripts/verify-demo.ts   # end-to-end HTTP check over seeded data
 npx ts-node scripts/verify-all-flows.ts  # full SaaS + agentic flow audit (needs the API running)
+npx ts-node scripts/verify-portal.ts     # public form, expiry and auto-screening audit
 ```
 
-`verify-demo.ts` asserts that every evidence quote exists in its source email, that letter claims reference valid evidence ids, and that all four export channels return non-empty artifacts. `verify-all-flows.ts` also checks AI job drafts, job status changes, public job detail, CV versions, offer/reject/hire decisions, notifications and cross-tenant isolation for the new endpoints.
+`verify-demo.ts` asserts that every evidence quote exists in its source email, that letter claims reference valid evidence ids, and that all four export channels return non-empty artifacts. `verify-all-flows.ts` also checks AI job drafts, job status changes, public job detail, CV versions, offer/reject/hire decisions, notifications and cross-tenant isolation. `verify-portal.ts` checks custom form validation, user-set link expiry, automatic screening that quotes form answers, stored answers on candidate detail, and disabling the screening switch.
 
 ## Configuration
 

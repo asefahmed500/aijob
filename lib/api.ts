@@ -191,14 +191,27 @@ export const api = {
       "/organizations/current",
     ),
   listJobs: () =>
-    request<Array<{ id: string; title: string; status: string; createdAt: string; _count: { applications: number } }>>(
-      "/jobs",
-    ),
-  createJob: (title: string, description: string, requirements: string, source?: string) =>
-    request<{ id: string; title: string; source: string }>("/jobs", {
+    request<Array<{
+      id: string;
+      title: string;
+      status: string;
+      publicToken: string | null;
+      formFields: string | null;
+      formExpiresAt: string | null;
+      autoScreen: boolean;
+      createdAt: string;
+      _count: { applications: number };
+    }>>("/jobs"),
+  createJob: (title: string, description: string, requirements: string, source?: string, form?: JobFormInput) =>
+    request<{ id: string; title: string; source: string; publicToken: string | null }>("/jobs", {
       method: "POST",
-      body: JSON.stringify({ title, description, requirements, source }),
+      body: JSON.stringify({ title, description, requirements, source, ...form }),
     }),
+  updateJobForm: (id: string, form: JobFormInput) =>
+    request<{ id: string; formFields: string | null; formExpiresAt: string | null; autoScreen: boolean }>(
+      `/jobs/${id}/form`,
+      { method: "PATCH", body: JSON.stringify(form) },
+    ),
   generateJobDraft: (brief: string) =>
     request<JobDraft>("/jobs/generate", {
       method: "POST",
@@ -300,12 +313,36 @@ export const api = {
 
   // Public apply
   getPublicJob: (token: string) => request<PublicJob>(`/public/jobs/${token}`),
-  publicApply: (token: string, data: { name: string; email: string; resumeText: string }) =>
-    request<{ applicationId: string; jobTitle: string }>(`/public/apply/${token}`, {
-      method: "POST",
-      body: JSON.stringify(data),
-    }),
+  publicApply: (
+    token: string,
+    data: { name: string; email: string; resumeText: string; answers?: Record<string, string> },
+  ) =>
+    request<{ applicationId: string; jobTitle: string; screening: ScreeningResult | null }>(
+      `/public/apply/${token}`,
+      { method: "POST", body: JSON.stringify(data) },
+    ),
 };
+
+export interface FormField {
+  id: string;
+  label: string;
+  type: "text" | "textarea" | "url";
+  required: boolean;
+  placeholder: string;
+}
+
+export interface JobFormInput {
+  formFields?: FormField[];
+  formExpiresAt?: string | null;
+  autoScreen?: boolean;
+}
+
+export interface ScreeningResult {
+  id: string;
+  score: number;
+  source: string;
+  summary: string;
+}
 
 export interface CandidateDetail {
   id: string;
@@ -319,7 +356,8 @@ export interface CandidateDetail {
     stage: string;
     status: string;
     rating: number | null;
-    job: { id: string; title: string };
+    formAnswers: string | null;
+    job: { id: string; title: string; formFields: string | null };
     scores: ScoreDetail[];
   }>;
 }
@@ -394,6 +432,9 @@ export interface JobDetail {
   status: string;
   source: string;
   publicToken: string | null;
+  formFields: string | null;
+  formExpiresAt: string | null;
+  autoScreen: boolean;
   applications: RankingEntry[];
 }
 
@@ -411,6 +452,9 @@ export interface PublicJob {
   requirements: string;
   status: string;
   company: string;
+  formFields: FormField[];
+  formExpiresAt: string | null;
+  autoScreen: boolean;
 }
 
 export interface DecisionResult {

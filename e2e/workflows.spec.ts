@@ -15,7 +15,7 @@ test("AI job draft fills the form and the job is persisted", async ({ page }) =>
   await page.goto("/org/jobs");
   await page.getByLabel("Hiring brief").fill(`${marker}\nTypeScript services; PostgreSQL schema design.`);
   await page.getByRole("button", { name: "Draft with AI" }).click();
-  await expect(page.getByLabel("Title")).toHaveValue(new RegExp(marker));
+  await expect(page.getByLabel("Title")).toHaveValue(new RegExp(marker), { timeout: 15000 });
   await expect(page.getByText(/Draft ready/)).toBeVisible();
 
   await page.getByRole("button", { name: "Create job" }).click();
@@ -46,7 +46,7 @@ test("AI CV, decision and notification stay connected", async ({ page }) => {
 
   await page.goto(`/org/candidates/${id}`);
   await page.getByRole("button", { name: "Generate AI CV" }).click();
-  await expect(page.getByText(/CV version 1 generated/)).toBeVisible();
+  await expect(page.getByText(/CV version 1 generated/)).toBeVisible({ timeout: 15000 });
   await expect(page.getByRole("link", { name: "Open printable CV" })).toBeVisible();
 
   await page.getByRole("button", { name: "Send offer" }).click();
@@ -55,6 +55,37 @@ test("AI CV, decision and notification stay connected", async ({ page }) => {
 
   await page.goto("/org/notifications");
   await expect(page.getByText(/Offer for/).first()).toBeVisible();
+});
+
+test("public form with expiry and AI screening works end to end", async ({ page }) => {
+  const marker = `Portal${Date.now()}`;
+  await page.goto("/org/jobs");
+  await page.getByLabel("Title").fill(marker);
+  await page.getByLabel("Description").fill("Build backend services with AI integrations.");
+  await page.getByLabel("Requirements").fill("Node.js and TypeScript services.\nPostgreSQL schema design and REST APIs.");
+
+  await page.getByRole("button", { name: "Add question" }).first().click();
+  await page.getByLabel("Question 1", { exact: true }).fill("Portfolio link");
+  await page.getByLabel("Question 1 required").check();
+  await page.getByLabel("Link expires at (optional)").fill("2027-01-01T12:00");
+
+  await page.getByRole("button", { name: "Create job and form" }).click();
+  await expect(page.getByText(/Job created/)).toBeVisible();
+
+  const link = (await page.getByText(/\/apply\/[0-9a-f-]+/).first().textContent())?.trim();
+  expect(link).toBeTruthy();
+
+  const applicant = await page.context().newPage();
+  await applicant.goto(link!);
+  await expect(applicant.getByText(marker)).toBeVisible();
+  await applicant.getByLabel("Full name").fill("Portal E2E Applicant");
+  await applicant.getByLabel("Email").fill(`portal-e2e-${Date.now()}@aijob.local`);
+  await applicant.getByLabel("Resume text").fill("Built Node.js and TypeScript services with REST APIs.");
+  await applicant.getByLabel("Portfolio link", { exact: false }).fill("https://github.com/example");
+  await applicant.getByRole("button", { name: "Submit application" }).click();
+
+  await expect(applicant.getByText(/Application submitted/)).toBeVisible({ timeout: 15000 });
+  await expect(applicant.getByText(/AI screening:/)).toBeVisible({ timeout: 15000 });
 });
 
 test("landing page has no horizontal overflow on mobile", async ({ page }) => {

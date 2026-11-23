@@ -1,11 +1,12 @@
 import { Module } from "@nestjs/common";
 import { PrismaModule } from "../prisma/prisma.module";
+import { ScoringModule } from "../scoring/scoring.module";
 import { PublicApplyController } from "./public-apply.controller";
 import { PublicJobsController } from "./public-jobs.controller";
 import { PublicApplyService } from "./public-apply.service";
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, ScoringModule],
   controllers: [PublicApplyController, PublicJobsController],
   providers: [PublicApplyService],
 })

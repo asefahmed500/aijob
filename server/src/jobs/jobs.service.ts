@@ -2,7 +2,9 @@ import { randomUUID } from "node:crypto";
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { AgenticService } from "../agentic/agentic.service";
-import { CreateJobDto } from "./dto/job.dto";
+import { normaliseFormFields } from "../common/form-fields";
+import { CreateJobDto, UpdateJobFormDto } from "./dto/job.dto";
+import type { Prisma } from "../../generated/prisma";
 
 @Injectable()
 export class JobsService {
@@ -28,8 +30,24 @@ export class JobsService {
         requirements: dto.requirements.trim(),
         publicToken: randomUUID(),
         source: dto.source ?? "manual",
+        formFields: JSON.stringify(normaliseFormFields(dto.formFields)),
+        formExpiresAt: dto.formExpiresAt ? new Date(dto.formExpiresAt) : null,
+        autoScreen: dto.autoScreen ?? true,
       },
     });
+  }
+
+  async updateForm(organizationId: string, jobId: string, dto: UpdateJobFormDto) {
+    await this.findOwned(organizationId, jobId);
+    const data: Prisma.JobPostUpdateInput = {};
+    if (dto.formFields !== undefined) {
+      data.formFields = JSON.stringify(normaliseFormFields(dto.formFields));
+    }
+    if (dto.formExpiresAt !== undefined) {
+      data.formExpiresAt = dto.formExpiresAt ? new Date(dto.formExpiresAt) : null;
+    }
+    if (dto.autoScreen !== undefined) data.autoScreen = dto.autoScreen;
+    return this.prisma.jobPost.update({ where: { id: jobId }, data });
   }
 
   draft(brief: string) {

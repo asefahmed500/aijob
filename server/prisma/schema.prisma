@@ -51,6 +51,9 @@ model JobPost {
   status         String                 @default("open")
   publicToken    String?
   source         String                 @default("manual")
+  formFields     String?
+  formExpiresAt  DateTime?
+  autoScreen     Boolean                @default(true)
   createdAt      DateTime               @default(now())
   applications   CandidateApplication[]
 
@@ -99,6 +102,7 @@ model CandidateApplication {
   status      String           @default("new")
   stage       String           @default("new")
   rating      Int?
+  formAnswers String?
   createdAt   DateTime         @default(now())
   updatedAt   DateTime?
   scores      CandidateScore[]

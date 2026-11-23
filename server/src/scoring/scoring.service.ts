@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma/prisma.service";
 import { ZaiClient } from "../ai/zai.client";
+import { formatAnswersForScreening, parseFormAnswers, parseFormFields } from "../common/form-fields";
 import { SCORE_CANDIDATE_SYSTEM, SCORING_PROMPT_VERSION } from "./scoring.prompt";
 import {
   requirementCount,
@@ -32,7 +33,15 @@ export class ScoringService {
 
   async scoreApplication(organizationId: string, applicationId: string) {
     const application = await this.loadApplication(organizationId, applicationId);
-    const resume = application.candidate.resumeText;
+    const answerText = formatAnswersForScreening(
+      parseFormFields(application.job.formFields),
+      parseFormAnswers(application.formAnswers),
+    );
+    // Form answers are part of the screening source, so quoted evidence stays
+    // an exact substring of the text the model and deterministic scorer see.
+    const resume = answerText
+      ? `${application.candidate.resumeText}\n${answerText}`
+      : application.candidate.resumeText;
     const requirements = application.job.requirements;
 
     let matches: ScoreMatch[] = [];

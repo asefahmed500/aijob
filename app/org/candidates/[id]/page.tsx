@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { api, type CandidateDetail } from "@/lib/api";
+import { api, type CandidateDetail, type FormField } from "@/lib/api";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -15,6 +15,15 @@ import { useOrgRole } from "@/components/auth/role-context";
 
 const STAGES = ["new", "screening", "interview", "offer", "hired", "rejected"];
 type Props = { params: Promise<{ id: string }> };
+
+function parseJson<T>(raw: string | null): T | null {
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
 
 export default function CandidateDetailPage({ params }: Props) {
   const [id, setId] = useState<string | null>(null);
@@ -214,6 +223,26 @@ export default function CandidateDetailPage({ params }: Props) {
           <CardHeader><CardTitle>Resume</CardTitle><CardDescription>Original text submitted by the candidate.</CardDescription></CardHeader>
           <CardContent><pre className="whitespace-pre-wrap text-sm text-muted-foreground">{candidate?.resumeText}</pre></CardContent>
         </Card>
+
+        {application?.formAnswers ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>Form answers</CardTitle>
+              <CardDescription>Responses from the public application form. They are included in AI screening.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-2">
+              {Object.entries(parseJson<Record<string, string>>(application.formAnswers) ?? {}).map(([fieldId, value]) => {
+                const field = parseJson<FormField[]>(application.job.formFields)?.find((item) => item.id === fieldId);
+                return (
+                  <div key={fieldId} className="flex flex-col gap-1 rounded-md border p-3">
+                    <span className="text-sm font-medium">{field?.label ?? fieldId}</span>
+                    <span className="whitespace-pre-wrap text-sm text-muted-foreground">{value}</span>
+                  </div>
+                );
+              })}
+            </CardContent>
+          </Card>
+        ) : null}
 
         {application ? (
           <>

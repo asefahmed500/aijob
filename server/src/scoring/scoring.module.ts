@@ -9,5 +9,6 @@ import { ScoringService } from "./scoring.service";
   imports: [PrismaModule, OrganizationsModule, AiModule],
   controllers: [ScoringController],
   providers: [ScoringService],
+  exports: [ScoringService],
 })
 export class ScoringModule {}

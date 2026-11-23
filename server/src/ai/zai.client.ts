@@ -1,9 +1,12 @@
 import { Injectable, ServiceUnavailableException } from "@nestjs/common";
+import { isPermanentHttpError } from "./retry-policy";
 
 const DEFAULT_BASE_URL = "https://api.z.ai/api/paas/v4";
 const DEFAULT_MODEL = "glm-4.6";
 const REQUEST_TIMEOUT_MS = 60_000;
 const MAX_ATTEMPTS = 3;
+
+type ZaiError = Error & { nonRetryable?: boolean };
 
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
@@ -27,7 +30,7 @@ export class ZaiClient {
       throw new ServiceUnavailableException("Z.ai API key is not configured");
     }
 
-    let lastError: Error | null = null;
+    let lastError: ZaiError | null = null;
     for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt += 1) {
       try {
         const response = await fetch(`${this.baseUrl}/chat/completions`, {
@@ -49,7 +52,9 @@ export class ZaiClient {
 
         if (!response.ok) {
           const detail = (await response.text()).slice(0, 500);
-          throw new Error(`Z.ai HTTP ${response.status}: ${detail}`);
+          const error = new Error(`Z.ai HTTP ${response.status}: ${detail}`) as ZaiError;
+          error.nonRetryable = isPermanentHttpError(response.status, detail);
+          throw error;
         }
 
         const payload = (await response.json()) as {
@@ -61,11 +66,12 @@ export class ZaiClient {
         }
         return this.parseJson<T>(content);
       } catch (error) {
-        lastError = error as Error;
+        lastError = error as ZaiError;
         const retryable =
-          lastError.message.includes("HTTP 429") ||
-          lastError.message.includes("HTTP 5") ||
-          lastError.name === "TimeoutError";
+          !lastError.nonRetryable &&
+          (lastError.message.includes("HTTP 429") ||
+            lastError.message.includes("HTTP 5") ||
+            lastError.name === "TimeoutError");
         if (!retryable || attempt === MAX_ATTEMPTS) break;
       }
     }

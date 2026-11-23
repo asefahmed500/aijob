@@ -15,7 +15,7 @@ import { GenerateJobDraftDto } from "../agentic/dto/agentic.dto";
 import { Policy } from "../auth/abac/policy.decorator";
 import { RolesGuard } from "../organizations/roles";
 import { JobsService } from "./jobs.service";
-import { CreateJobDto, UpdateJobStatusDto } from "./dto/job.dto";
+import { CreateJobDto, UpdateJobFormDto, UpdateJobStatusDto } from "./dto/job.dto";
 
 @Controller("jobs")
 @UseGuards(JwtAuthGuard, OrgGuard, RolesGuard)
@@ -57,6 +57,16 @@ export class JobsController {
     @Body() dto: UpdateJobStatusDto,
   ) {
     return this.jobs.setStatus(organizationId, id, dto.status);
+  }
+
+  @Patch(":id/form")
+  @Policy("job", "update")
+  updateForm(
+    @OrgId() organizationId: string,
+    @Param("id") id: string,
+    @Body() dto: UpdateJobFormDto,
+  ) {
+    return this.jobs.updateForm(organizationId, id, dto);
   }
 
   @Delete(":id")
