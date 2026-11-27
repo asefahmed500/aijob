@@ -47,6 +47,7 @@ export default function AdminPage() {
   const [audit, setAudit] = useState<AuditRow[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
     setError(null);
@@ -73,6 +74,8 @@ export default function AdminPage() {
           ? "Platform admin access is required."
           : cause instanceof Error ? cause.message : "Could not load admin data",
       );
+    } finally {
+      setLoaded(true);
     }
   }, []);
 
@@ -93,7 +96,7 @@ export default function AdminPage() {
     }
   }
 
-  if (!isAdmin && !error) {
+  if (!loaded) {
     return <main className="flex flex-1 items-center justify-center px-6 py-16">Loading…</main>;
   }
 

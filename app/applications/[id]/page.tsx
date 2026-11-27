@@ -27,6 +27,7 @@ export default function WorkspacePage({ params }: Props) {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const refresh = useCallback(async (applicationId: string) => {
     try {
@@ -67,6 +68,21 @@ export default function WorkspacePage({ params }: Props) {
     }
   }
 
+  async function removeApplication() {
+    if (!id) return;
+    if (!window.confirm("Delete this application and all its emails, evidence, letters and exports?")) return;
+    setDeleting(true);
+    setError(null);
+    try {
+      await api.deleteApplication(id);
+      router.push("/dashboard");
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "Could not delete application");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   function download(content: string, filename: string, contentType: string, base64: boolean) {
     const bytes = base64 ? Uint8Array.from(atob(content), (char) => char.charCodeAt(0)) : new TextEncoder().encode(content);
     const url = URL.createObjectURL(new Blob([bytes], { type: contentType }));
@@ -87,6 +103,16 @@ export default function WorkspacePage({ params }: Props) {
             {application ? `${application.role} — ${application.company}` : "Workspace"}
           </h1>
           <p className="text-sm text-muted-foreground">Email → Evidence → Cover letter → Export</p>
+        </div>
+        <div className="flex justify-end">
+          <Button
+            variant="destructive"
+            size="sm"
+            loading={deleting}
+            onClick={() => void removeApplication()}
+          >
+            Delete application
+          </Button>
         </div>
 
         {status ? <Alert><AlertTitle>Working</AlertTitle><AlertDescription>{status}</AlertDescription></Alert> : null}

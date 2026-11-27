@@ -101,7 +101,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [orgs, setOrgs] = useState<OrgOption[]>([]);
   const [activeOrg, setActiveOrg] = useState<string | null>(null);
   const [orgRole, setOrgRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(!isPublic(pathname));
+  const [authChecked, setAuthChecked] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -118,14 +118,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     } catch {
       setUser(null);
     } finally {
-      setLoading(false);
+      setAuthChecked(true);
     }
   }, []);
 
   useEffect(() => {
     if (isPublic(pathname)) return;
+    setAuthChecked(false);
     void load();
   }, [pathname, load]);
+
+  // A protected URL opened directly must not leave the visitor on a shell
+  // that leaks the route name while its API calls fail with 401.
+  useEffect(() => {
+    if (!isPublic(pathname) && authChecked && !user) {
+      router.replace("/login");
+    }
+  }, [pathname, authChecked, user, router]);
 
   async function switchOrg(organizationId: string) {
     await api.switchOrganization(organizationId);
@@ -138,8 +147,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     router.push("/login");
   }
 
-  if (isPublic(pathname) || (!loading && !user)) {
+  if (isPublic(pathname)) {
     return <>{children}</>;
+  }
+
+  if (!user) {
+    return (
+      <main className="flex flex-1 items-center justify-center text-sm text-muted-foreground">
+        {authChecked ? "Redirecting to sign in…" : "Loading…"}
+      </main>
+    );
   }
 
   const isAdmin = user?.systemRole === "PLATFORM_ADMIN";

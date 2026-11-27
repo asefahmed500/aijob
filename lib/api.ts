@@ -143,6 +143,7 @@ export const api = {
     evidence: Evidence[];
     letters: CoverLetter[];
   }>(`/applications/${id}`),
+  deleteApplication: (id: string) => request<{ ok: boolean }>(`/applications/${id}`, { method: "DELETE" }),
   addEmail: (id: string, rawBody: string, filename?: string) =>
     request<EmailSource>(`/applications/${id}/emails`, {
       method: "POST",
