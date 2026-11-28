@@ -47,6 +47,9 @@ test.describe("PHASE 9: responsive layout, visual evidence and accessibility bas
         const controls = Array.from(document.querySelectorAll("button, a[href], input, textarea, [role='combobox']"));
         return controls
           .filter((element) => {
+            // Base UI Select renders hidden serialization inputs that are not
+            // user-facing controls and are explicitly aria-hidden.
+            if (element.getAttribute("aria-hidden") === "true") return false;
             const aria = element.getAttribute("aria-label");
             const text = element.textContent?.trim();
             const labelledBy = element.getAttribute("aria-labelledby");
