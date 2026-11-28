@@ -68,6 +68,7 @@
 | 2 | High | Non-admin visiting `/admin` was stuck forever on "Loading…" because the guard also matched the pre-load state | `app/admin/page.tsx`: separate `loaded` state so "Access denied" renders after auth resolution |
 | 3 | Medium | Refreshing admin data unmounted the Tabs and silently reset the active tab to Overview | `app/admin/page.tsx`: stop toggling `loaded` back to false on refresh |
 | 4 | Medium | Application DELETE API existed but had no UI control (incomplete CRUD) | Added a confirmed "Delete application" action in `app/applications/[id]/page.tsx` plus `api.deleteApplication` |
+| 5 | Low | Inconsistent brand lockup between navbar, sidebar and footer | New shared `Brand` component and a distinct verified-résumé mark; consistent typography and semantic colours across landing nav/footer and app sidebar |
 
 ## Regression
 

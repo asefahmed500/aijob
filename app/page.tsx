@@ -27,6 +27,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Brand } from "@/components/brand/brand";
 import { Logo } from "@/components/brand/logo";
 import { cn } from "@/lib/utils";
 
@@ -102,8 +103,7 @@ export default function Home() {
         >
           <div className="flex min-w-0 items-center gap-8">
             <Link href="/" aria-label="aijob home" className="flex shrink-0 items-center">
-              <Logo size={30} />
-              <span className="ml-2 text-sm font-semibold tracking-tight">aijob</span>
+              <Brand size={30} />
             </Link>
             <div className="hidden items-center gap-6 md:flex">
               <NavLink href="#product">Product</NavLink>
@@ -326,10 +326,7 @@ export default function Home() {
         <div className="mx-auto w-full max-w-6xl px-6 py-12">
           <div className="flex flex-col gap-10 sm:flex-row sm:items-start sm:justify-between">
             <div className="max-w-xs">
-              <div className="flex items-center gap-2">
-                <Logo size={28} />
-                <span className="text-sm font-semibold">aijob</span>
-              </div>
+              <Brand size={28} />
               <p className="mt-3 text-sm text-muted-foreground">Traceable hiring for modern teams.</p>
             </div>
             <div className="flex gap-12 text-sm">
