@@ -69,8 +69,8 @@ export default function PublicApplyPage({ params }: Props) {
   const closed = job?.status === "closed" || job?.status === "expired";
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
-      <div className="flex w-full max-w-2xl flex-col gap-6">
+    <main className="flex flex-1 items-center justify-center px-6 py-20">
+      <div className="flex w-full max-w-2xl flex-col gap-8">
         {job ? (
           <Card>
             <CardHeader>

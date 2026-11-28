@@ -42,7 +42,7 @@ export default function AcceptInvitationPage({ params }: Props) {
   }
 
   return (
-    <main className="flex flex-1 items-center justify-center px-6 py-16">
+    <main className="flex flex-1 items-center justify-center px-6 py-20">
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Join an organization</CardTitle>

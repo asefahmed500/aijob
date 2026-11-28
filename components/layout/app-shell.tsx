@@ -14,7 +14,6 @@ import {
   Plus,
   Settings2,
   ShieldCheck,
-  Sparkles,
   Users,
 } from "lucide-react";
 import { api, type User } from "@/lib/api";
@@ -50,9 +49,6 @@ import {
   SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSub,
-  SidebarMenuSubButton,
-  SidebarMenuSubItem,
   SidebarProvider,
   SidebarRail,
   SidebarSeparator,
@@ -61,7 +57,14 @@ import {
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Logo } from "@/components/brand/logo";
 
-const PUBLIC_PREFIXES = ["/login", "/register", "/apply", "/invitations"];
+const PUBLIC_PREFIXES = [
+  "/login",
+  "/register",
+  "/forgot-password",
+  "/reset-password",
+  "/apply",
+  "/invitations",
+];
 
 const workspaceNav = [
   { label: "Overview", href: "/org", icon: LayoutDashboard },
@@ -220,20 +223,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                         <item.icon />
                         <span>{item.label}</span>
                       </SidebarMenuButton>
-                      {item.href === "/org/jobs" || item.href === "/org/candidates" ? (
-                        <SidebarMenuSub>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<Link href={item.href} />}>
-                              {item.href === "/org/jobs" ? "All jobs" : "All candidates"}
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                          <SidebarMenuSubItem>
-                            <SidebarMenuSubButton render={<Link href={item.href} />}>
-                              {item.href === "/org/jobs" ? "New job" : "Add candidate"}
-                            </SidebarMenuSubButton>
-                          </SidebarMenuSubItem>
-                        </SidebarMenuSub>
-                      ) : null}
                     </SidebarMenuItem>
                   ))}
                 </SidebarMenu>
@@ -248,12 +237,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                     <SidebarMenuButton render={<Link href="/dashboard" />} isActive={pathname === "/dashboard"}>
                       <FileText />
                       <span>My applications</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                  <SidebarMenuItem>
-                    <SidebarMenuButton render={<Link href="/dashboard" />}>
-                      <Sparkles />
-                      <span>Cover letters</span>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 </SidebarMenu>
@@ -320,7 +303,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Sidebar>
 
         <SidebarInset>
-          <header className="flex h-14 shrink-0 items-center gap-3 border-b px-4">
+          <header className="flex h-16 shrink-0 items-center gap-4 border-b px-6">
             <SidebarTrigger />
             <Breadcrumb>
               <BreadcrumbList>

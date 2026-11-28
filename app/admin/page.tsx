@@ -102,7 +102,7 @@ export default function AdminPage() {
 
   if (!isAdmin) {
     return (
-      <main className="flex flex-1 flex-col px-6 py-10">
+      <main className="flex flex-1 flex-col px-6 py-12 lg:px-10">
         <div className="mx-auto w-full max-w-2xl">
           <Alert variant="destructive">
             <AlertTitle>Access denied</AlertTitle>
@@ -115,7 +115,7 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="flex flex-1 flex-col px-6 py-10">
+    <main className="flex flex-1 flex-col px-6 py-12 lg:px-10">
       <div className="mx-auto w-full max-w-6xl flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-3">

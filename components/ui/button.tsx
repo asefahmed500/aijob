@@ -25,10 +25,10 @@ const buttonVariants = cva(
         soft: "bg-primary/10 text-primary hover:bg-primary/15 hover:shadow-none",
       },
       size: {
-        default: "h-9 min-w-28 gap-2 px-5",
+        default: "h-8 min-w-24 gap-2 px-4",
         xs: "h-7 min-w-16 gap-1.5 rounded-[min(var(--radius-md),10px)] px-3 text-xs in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
-        sm: "h-8 min-w-20 gap-2 rounded-[min(var(--radius-md),12px)] px-4 text-[0.8rem] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3.5",
-        lg: "h-10 min-w-36 gap-2 px-6",
+        sm: "h-7 min-w-20 gap-1.5 rounded-[min(var(--radius-md),12px)] px-3 text-[0.8rem] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3.5",
+        lg: "h-9 min-w-32 gap-2 px-5",
         icon: "size-9",
         "icon-xs":
           "size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",

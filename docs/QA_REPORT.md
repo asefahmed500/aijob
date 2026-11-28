@@ -21,8 +21,8 @@
 
 | Metric | Result |
 | --- | --- |
-| Total test cases executed | 58 |
-| Passed | 58 |
+| Total test cases executed | 62 |
+| Passed | 62 |
 | Failed | 0 |
 | Blocked (by design) | 1 — real SMTP delivery (would send a live email; requires explicit authorization) |
 | Not tested (documented) | 3 — clock-driven JWT expiry (no short-TTL test tenant), inactive/deleted-account login (no soft-delete flow exists), PDF pagination visual inspection of the exported DOCX/PDF |
@@ -70,10 +70,12 @@
 | 4 | Medium | Application DELETE API existed but had no UI control (incomplete CRUD) | Added a confirmed "Delete application" action in `app/applications/[id]/page.tsx` plus `api.deleteApplication` |
 | 5 | Low | Inconsistent brand lockup between navbar, sidebar and footer | New shared `Brand` component, a distinct monogram mark, and the user-facing product name **Joby** applied consistently to landing nav, sidebar and footer (account/domain infrastructure unchanged) |
 | 6 | Low | Protected-route test used a fixed 300 ms wait and occasionally raced the redirect | Replaced with `expect.poll` on the URL; repeated 3× successfully |
+| 7 | Medium | No password-reset path existed | Real single-use, expiring hashed reset tokens (`PasswordResetToken`), `POST /auth/forgot-password` and `/auth/reset-password`, with a dev-only usable link and production email-configuration guard; 4 new browser tests |
+| 8 | Low | Crowded UI and oversized controls | Reduced default/lg/sm button sizes, increased page padding, Card spacing and Field gaps; simplified sidebar (removed duplicate sub-links and Cover letters); SaaS-styled auth and public pages |
 
 ## Regression
 
-- Full suite re-run after all fixes and the CV-pipeline slice: **58 passed / 0 failed** (11.2 min, headed Chromium).
+- Full suite re-run after all fixes, CV pipeline, password reset and UI/UX pass: **62 passed / 0 failed** (8.0 min, headed Chromium).
 - Targeted cross-tenant isolation test repeated 3×: 3 passed.
 - `npm run lint`: clean. `npx tsc --noEmit`: clean. `npm run build`: successful (20 static pages generated).
 

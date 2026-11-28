@@ -38,6 +38,7 @@ async function main() {
         cvDocuments: await prisma.candidateDocument.count(),
         processingJobs: await prisma.processingJob.count(),
         agentExecutions: await prisma.agentExecution.count(),
+        passwordResetTokens: await prisma.passwordResetToken.count(),
       };
       console.log(JSON.stringify(result, null, 2));
     } else if (command === "by-email") {

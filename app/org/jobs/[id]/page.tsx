@@ -51,7 +51,7 @@ export default function JobRankingPage({ params }: Props) {
   if (!id) return <main className="flex flex-1 items-center justify-center">Loading…</main>;
 
   return (
-    <main className="flex flex-1 flex-col px-6 py-10">
+    <main className="flex flex-1 flex-col px-6 py-12 lg:px-10">
       <div className="mx-auto w-full max-w-6xl flex flex-col gap-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
