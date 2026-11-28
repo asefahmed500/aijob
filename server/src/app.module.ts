@@ -18,6 +18,7 @@ import { AnalyticsModule } from "./analytics/analytics.module";
 import { PublicApplyModule } from "./public-apply/public-apply.module";
 import { AgenticModule } from "./agentic/agentic.module";
 import { AdminModule } from "./admin/admin.module";
+import { DocumentsModule } from "./documents/documents.module";
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { AdminModule } from "./admin/admin.module";
     PublicApplyModule,
     AgenticModule,
     AdminModule,
+    DocumentsModule,
   ],
 })
 export class AppModule {}

@@ -21,8 +21,8 @@
 
 | Metric | Result |
 | --- | --- |
-| Total test cases executed | 54 |
-| Passed | 54 |
+| Total test cases executed | 58 |
+| Passed | 58 |
 | Failed | 0 |
 | Blocked (by design) | 1 — real SMTP delivery (would send a live email; requires explicit authorization) |
 | Not tested (documented) | 3 — clock-driven JWT expiry (no short-TTL test tenant), inactive/deleted-account login (no soft-delete flow exists), PDF pagination visual inspection of the exported DOCX/PDF |
@@ -71,7 +71,7 @@
 
 ## Regression
 
-- Full suite re-run after all fixes: **54 passed / 0 failed** (4.4 min, headed Chromium).
+- Full suite re-run after all fixes and the CV-pipeline slice: **58 passed / 0 failed** (11.2 min, headed Chromium).
 - Targeted cross-tenant isolation test repeated 3×: 3 passed.
 - `npm run lint`: clean. `npx tsc --noEmit`: clean. `npm run build`: successful (20 static pages generated).
 

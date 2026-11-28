@@ -1,6 +1,6 @@
 # ATS Upgrade Audit — Existing System vs Required AI-Powered Platform
 
-**Status:** AUDIT COMPLETE / IMPLEMENTATION BLOCKED ON EXTERNAL CREDENTIALS  
+**Status:** AUDIT COMPLETE / FAKE-ADAPTER VERTICAL SLICE IMPLEMENTED / R2 + LIVE AI BLOCKED ON EXTERNAL CREDENTIALS  
 **Date:** 2026-11-28  
 **Codebase:** Next.js 16 frontend + NestJS 12 API + Prisma 7 / SQLite + Z.ai client with deterministic fallback
 
@@ -67,6 +67,19 @@ Add, without removing existing working tables:
 
 Constraints: one candidate → many documents/versions; one application → many matches/evaluations/interviews; unique `(status, idempotencyKey)` on processing jobs; foreign keys with cascade where appropriate; indexes on tenant, candidate, job, status and timestamps.
 
+## 4b. Implemented vertical slice (authorised fake adapter)
+
+With the user's explicit approval to use a fake API for now, the following are now **implemented, persisted and browser-verified**:
+
+- Prisma entities `CandidateDocument`, `ProcessingJob`, `AgentExecution` with unique `(candidateId, sha256)`, unique idempotency key, indexes and cascade relations (`server/prisma/schema.prisma`, safe additive `prisma db push` on local dev DB).
+- `FileStorage` boundary with `LocalFileStorage` (`storageProvider: "local-fake"`) so R2 can replace it without changing the API (`server/src/documents/storage.ts`).
+- `POST /candidates/:id/documents` (PDF/DOC/DOCX, MIME + magic-byte + 10 MB validation, SHA-256 duplicate detection), `GET` list/detail/download, `POST /documents/:id/retry` — all org-scoped with RBAC (`server/src/documents/*`).
+- Deterministic, labelled fake processing stages (`QUEUED → UPLOADED → VALIDATING → EXTRACTING → PARSING → ANALYZING → COMPLETED`) and four agent executions (`cv_parsing`, `skills_analysis`, `experience_evaluation`, `job_matching`) with `source: "fake"` outputs derived from the candidate's stored resume text.
+- Candidate-page CV upload centre with single/multiple upload, drag-and-drop, status badges, download, retry and extracted-text preview (`app/org/candidates/[id]/page.tsx`).
+- 4 new browser tests: full upload→process→DB→download→refresh flow, duplicate/invalid rejection, tenant scoping, and a real-key test that confirms the configured Z.ai key is present but returns **HTTP 429 insufficient balance**, so the app honestly falls back to `source: "deterministic"` rather than claiming AI success.
+
+**Verified:** 58/58 Playwright tests, 31/31 backend unit tests, lint, tsc, prisma validate, production build.
+
 ## 5. Exact external configuration needed (names only — no secrets)
 
 | Purpose | Variables |
@@ -91,10 +104,10 @@ Constraints: one candidate → many documents/versions; one application → many
 | Phase | Work | Status |
 | --- | --- | --- |
 | 1 | Audit (this document) + green regression suite (54/54) | DONE |
-| 2 | Prisma entities, indexes, safe local migration | READY — no external credentials |
-| 3 | CV upload API (PDF/DOC/DOCX), validation, metadata table | READY locally; R2 storage BLOCKED on R2 vars |
-| 4 | Async processing workers + statuses + SSE | BLOCKED on Redis URL (or use SQLite queue after decision) |
-| 5 | 8 LangGraph agents + validated outputs | BLOCKED on model key / LangGraph deployment choice |
+| 2 | Prisma entities, indexes, safe local migration | DONE (additive, local dev DB) |
+| 3 | CV upload API (PDF/DOC/DOCX), validation, metadata table | DONE with labelled local-fake adapter; R2 swap BLOCKED on R2 vars |
+| 4 | Async processing workers + statuses + SSE | DONE in-process + persisted statuses; durable queue/SSE BLOCKED on Redis URL |
+| 5 | 8 LangGraph agents + validated outputs | 4 fake-labelled agents DONE; real LangGraph BLOCKED on model key/deployment |
 | 6 | Weighted scoring + overrides + job requirements | READY — logic can use existing Z.ai fallback |
 | 7 | Shortlisting, interviews, pipeline upgrades | READY |
 | 8 | Dashboard processing stats + reports (PDF/CSV) | READY |

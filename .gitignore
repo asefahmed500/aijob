@@ -48,5 +48,6 @@ next-env.d.ts
 /server/node_modules
 /server/dist
 /server/generated
+/server/uploads
 *.db
 *.db-journal

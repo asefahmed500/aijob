@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { api, type CandidateDetail, type FormField } from "@/lib/api";
+import { api, ApiError, type CandidateDetail, type CvDocument, type FormField } from "@/lib/api";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -38,6 +38,8 @@ export default function CandidateDetailPage({ params }: Props) {
   const [rating, setRating] = useState("3");
   const [decisionMessage, setDecisionMessage] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
+  const [documents, setDocuments] = useState<CvDocument[]>([]);
+  const [uploading, setUploading] = useState(false);
   const { canWrite } = useOrgRole();
 
   const loadActivity = useCallback(async (applicationId: string) => {
@@ -49,10 +51,19 @@ export default function CandidateDetailPage({ params }: Props) {
     setTimeline(events);
   }, []);
 
+  const refreshDocuments = useCallback(async (candidateId: string) => {
+    try {
+      setDocuments(await api.listDocuments(candidateId));
+    } catch {
+      // Keep the last successfully loaded list; the page shows its own error state.
+    }
+  }, []);
+
   const load = useCallback(async (candidateId: string, preferredAppId?: string) => {
     try {
       const record = await api.getCandidate(candidateId);
       setCandidate(record);
+      await refreshDocuments(candidateId);
       const chosen =
         record.applications.find((item) => item.id === preferredAppId) ?? record.applications[0] ?? null;
       setSelectedAppId(chosen?.id ?? null);
@@ -66,7 +77,7 @@ export default function CandidateDetailPage({ params }: Props) {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not load candidate");
     }
-  }, [loadActivity]);
+  }, [loadActivity, refreshDocuments]);
 
   useEffect(() => {
     void params.then(async (resolved) => {
@@ -74,6 +85,16 @@ export default function CandidateDetailPage({ params }: Props) {
       await load(resolved.id);
     });
   }, [params, load]);
+
+  useEffect(() => {
+    if (!id || documents.length === 0) return;
+    const pending = documents.some(
+      (document) => !["COMPLETED", "FAILED", "NEEDS_REVIEW"].includes(document.status),
+    );
+    if (!pending) return;
+    const timer = window.setInterval(() => void refreshDocuments(id), 1000);
+    return () => window.clearInterval(timer);
+  }, [id, documents, refreshDocuments]);
 
   const application = candidate?.applications.find((item) => item.id === selectedAppId) ?? null;
   const cv = candidate?.cvs[0] ?? null;
@@ -142,6 +163,40 @@ export default function CandidateDetailPage({ params }: Props) {
       await load(id, application?.id);
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Could not generate CV");
+    } finally {
+      setBusy(null);
+    }
+  }
+
+  async function uploadFiles(files: FileList | File[]) {
+    if (!id || files.length === 0) return;
+    setUploading(true);
+    setError(null);
+    try {
+      for (const file of Array.from(files)) {
+        try {
+          await api.uploadDocument(id, file);
+          setStatus(`Uploaded ${file.name} — processing started.`);
+        } catch (cause) {
+          setError(cause instanceof ApiError ? cause.message : `Could not upload ${file.name}`);
+        }
+      }
+      await refreshDocuments(id);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function retryDocument(documentId: string) {
+    if (!id) return;
+    setBusy(documentId);
+    setError(null);
+    try {
+      await api.retryDocument(documentId);
+      setStatus("Processing restarted.");
+      await refreshDocuments(id);
+    } catch (cause) {
+      setError(cause instanceof ApiError ? cause.message : "Could not restart processing");
     } finally {
       setBusy(null);
     }
@@ -216,6 +271,76 @@ export default function CandidateDetailPage({ params }: Props) {
                 Generate AI CV
               </Button>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>CV documents</CardTitle>
+            <CardDescription>
+              PDF, DOC and DOCX uploads are validated, stored through a labelled local adapter, and processed asynchronously.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-4">
+            <div
+              className="flex flex-col gap-2 rounded-md border border-dashed p-4"
+              onDragOver={(event) => event.preventDefault()}
+              onDrop={(event) => {
+                event.preventDefault();
+                void uploadFiles(event.dataTransfer.files);
+              }}
+            >
+              <label htmlFor="cv-file" className="text-sm font-medium">
+                Upload CV files (PDF, DOC, DOCX — max 10 MB)
+              </label>
+              <Input
+                id="cv-file"
+                type="file"
+                accept=".pdf,.doc,.docx"
+                multiple
+                disabled={!canWrite || uploading}
+                onChange={(event) => {
+                  void uploadFiles(event.target.files ?? []);
+                  event.target.value = "";
+                }}
+              />
+              <p className="text-xs text-muted-foreground">
+                Drag files here or choose them. Processing continues even if this tab is closed.
+              </p>
+            </div>
+            {documents.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No CV documents uploaded yet.</p>
+            ) : null}
+            {documents.map((document) => (
+              <div key={document.id} className="flex flex-col gap-2 rounded-md border p-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">{document.filename}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {document.storageProvider} · {Math.round(document.sizeBytes / 1024)} KB · {document.jobs[0]?.executions.length ?? 0} agents
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge variant={document.status === "COMPLETED" ? "default" : document.status === "FAILED" ? "destructive" : "secondary"}>
+                      {document.status}
+                    </Badge>
+                    <a className={buttonVariants({ variant: "outline", size: "sm" })} href={api.documentDownloadUrl(document.id)}>
+                      Download
+                    </a>
+                    {document.status === "FAILED" || document.status === "NEEDS_REVIEW" ? (
+                      <Button size="sm" onClick={() => void retryDocument(document.id)} loading={busy === document.id} disabled={!canWrite}>
+                        Retry
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+                {document.extractionNote ? <p className="text-xs text-muted-foreground">{document.extractionNote}</p> : null}
+                {document.error ? <p className="text-xs text-destructive">{document.error}</p> : null}
+                {document.extractedText ? (
+                  <pre className="max-h-32 overflow-auto whitespace-pre-wrap rounded bg-muted/30 p-2 text-xs">{document.extractedText}</pre>
+                ) : null}
+              </div>
+            ))}
           </CardContent>
         </Card>
 

@@ -276,6 +276,35 @@ export const api = {
   getCandidate: (id: string) => request<CandidateDetail>(`/candidates/${id}`),
   generateCv: (candidateId: string) =>
     request<CvRecord>(`/candidates/${candidateId}/cv/generate`, { method: "POST" }),
+  listDocuments: (candidateId: string) =>
+    request<CvDocument[]>(`/candidates/${candidateId}/documents`),
+  getDocument: (id: string) => request<CvDocument>(`/documents/${id}`),
+  uploadDocument: async (candidateId: string, file: File): Promise<CvDocument> => {
+    const form = new FormData();
+    form.append("file", file);
+    const response = await fetch(`${API_BASE}/candidates/${candidateId}/documents`, {
+      method: "POST",
+      credentials: "include",
+      body: form,
+    });
+    if (!response.ok) {
+      let message = `Upload failed (${response.status})`;
+      try {
+        const body = (await response.json()) as { message?: string | string[] };
+        if (body.message) {
+          message = Array.isArray(body.message) ? body.message.join(", ") : body.message;
+        }
+      } catch {
+        // non-JSON error body
+      }
+      throw new ApiError(message, response.status);
+    }
+    return (await response.json()) as CvDocument;
+  },
+  retryDocument: (id: string) =>
+    request<ProcessingJob>(`/documents/${id}/retry`, { method: "POST" }),
+  documentDownloadUrl: (id: string) => `${API_BASE}/documents/${id}/download`,
+
   getNotifications: () =>
     request<Array<{ id: string; status: string; subject: string; recipient: string; createdAt: string }>>(
       "/pipeline/notifications",
@@ -465,6 +494,47 @@ export interface DecisionResult {
   decision: "offer" | "reject" | "hire";
   notificationId: string;
   notificationStatus: string;
+}
+
+export interface AgentExecution {
+  id: string;
+  agentKey: string;
+  status: string;
+  source: string;
+  model: string | null;
+  promptVersion: string | null;
+  output: unknown;
+  error: string | null;
+  createdAt: string;
+}
+
+export interface ProcessingJob {
+  id: string;
+  documentId: string;
+  type: string;
+  status: string;
+  attempts: number;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+  executions: AgentExecution[];
+}
+
+export interface CvDocument {
+  id: string;
+  candidateId: string;
+  filename: string;
+  mimeType: string;
+  sizeBytes: number;
+  sha256: string;
+  storageProvider: string;
+  status: string;
+  extractedText: string | null;
+  extractionNote: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+  jobs: ProcessingJob[];
 }
 
 export interface CvRecord {

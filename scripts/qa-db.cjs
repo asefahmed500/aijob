@@ -35,6 +35,9 @@ async function main() {
         notes: await prisma.candidateNote.count(),
         notifications: await prisma.notificationLog.count(),
         invitations: await prisma.invitation.count(),
+        cvDocuments: await prisma.candidateDocument.count(),
+        processingJobs: await prisma.processingJob.count(),
+        agentExecutions: await prisma.agentExecution.count(),
       };
       console.log(JSON.stringify(result, null, 2));
     } else if (command === "by-email") {
