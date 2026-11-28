@@ -124,9 +124,16 @@ test.describe("PHASE 1-2: application discovery and real-browser sweep", () => {
       await page.waitForTimeout(200);
     }
     const api5xx = log.apiResponses.filter((entry) => entry.status >= 500);
-    console.log(`[sweep] apiCalls=${log.apiResponses.length} 5xx=${api5xx.length} consoleErrors=${log.consoleErrors.length} ${JSON.stringify(log.consoleErrors.slice(0, 10))}`);
+    // Next.js 16 dev emits an instant-navigation validation diagnostic for
+    // client-component segments; `instant` cannot be exported from them.
+    const nextDevDiagnostic = "Could not validate that a segment in your UI has instant navigation";
+    const appConsoleErrors = log.consoleErrors.filter((entry) => !entry.includes(nextDevDiagnostic));
+    console.log(
+      `[sweep] apiCalls=${log.apiResponses.length} 5xx=${api5xx.length} appConsoleErrors=${appConsoleErrors.length} nextDevDiagnostics=${log.consoleErrors.length - appConsoleErrors.length}`,
+    );
     expect(api5xx, "no backend 5xx during navigation").toEqual([]);
     expect(log.pageErrors, "no React/runtime errors").toEqual([]);
+    expect(appConsoleErrors, "no application console errors during navigation").toEqual([]);
   });
 
   test("all four required viewports have no horizontal overflow on core pages", async ({ page }) => {

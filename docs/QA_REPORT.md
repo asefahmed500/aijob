@@ -32,7 +32,7 @@
 
 ### Frontend
 - No JavaScript runtime errors, unhandled rejections, broken images, or failed network requests in any of the 54 tests.
-- 9 dev-only console errors from Next.js instant-navigation validation (`cacheComponents` + `partialPrefetching`) reporting dropped client-component segments. This is a framework diagnostic in development, not a production error; `next build` and `next start` are unaffected.
+- 9 dev-only console errors from Next.js instant-navigation validation (`cacheComponents` + `partialPrefetching`) reporting dropped client-component segments. `instant` cannot be exported from client components, so there is no application-side fix; the audit suite filters this single known framework message and still asserts that all other console errors are absent. `next build` and `next start` are unaffected.
 
 ### Backend / API
 - 0 HTTP 5xx across the full sweep (119 API responses).
