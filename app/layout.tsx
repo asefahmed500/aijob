@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "aijob — evidence-grounded cover letters",
+  title: "Joby — evidence-grounded hiring",
   description: "Turn job emails into traceable evidence and a tailored cover letter.",
 };
 

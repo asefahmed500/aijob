@@ -121,7 +121,7 @@ export default function CandidateCvPage({ params }: Props) {
             ) : null}
 
             <footer className="mt-10 border-t pt-4 text-xs text-muted-foreground">
-              {name} · CV generated from resume text · aijob
+              {name} · CV generated from resume text · Joby
             </footer>
           </article>
         ) : (

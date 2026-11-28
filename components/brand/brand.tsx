@@ -12,7 +12,7 @@ export function Brand({
   return (
     <span className={cn("inline-flex items-center gap-2", className)}>
       <Logo size={size} />
-      <span className="text-sm font-semibold tracking-tight">aijob</span>
+      <span className="text-sm font-semibold tracking-tight">Joby</span>
     </span>
   );
 }

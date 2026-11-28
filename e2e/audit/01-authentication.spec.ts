@@ -77,19 +77,14 @@ test.describe("PHASE 3: authentication, sessions and authorization", () => {
 
   test("protected routes block direct URL access without a session", async ({ page }) => {
     const routes = ["/dashboard", "/org", "/org/jobs", "/org/candidates", "/admin", "/applications/fake-id"];
-    const results: Array<{ route: string; landed: string }> = [];
     for (const route of routes) {
       await page.goto(route);
-      await page.waitForLoadState("domcontentloaded");
-      await page.waitForTimeout(300);
-      results.push({ route, landed: new URL(page.url()).pathname });
-    }
-    console.log(`[protected-routes] ${JSON.stringify(results)}`);
-    for (const result of results) {
-      expect(
-        result.landed,
-        `${result.route} must redirect an unauthenticated visitor to /login`,
-      ).toBe("/login");
+      await expect
+        .poll(() => new URL(page.url()).pathname, {
+          timeout: 15_000,
+          message: `${route} must redirect an unauthenticated visitor to /login`,
+        })
+        .toBe("/login");
     }
   });
 

@@ -176,7 +176,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 <DropdownMenu>
                   <SidebarMenuButton render={<DropdownMenuTrigger />}>
                     <Logo size={22} />
-                    <span className="font-semibold tracking-tight">aijob</span>
+                    <span className="font-semibold tracking-tight">Joby</span>
                     <ChevronDown className="ml-auto" />
                   </SidebarMenuButton>
                   <DropdownMenuContent align="start" className="w-60">

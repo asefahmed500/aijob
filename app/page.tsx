@@ -102,7 +102,7 @@ export default function Home() {
           className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-3"
         >
           <div className="flex min-w-0 items-center gap-8">
-            <Link href="/" aria-label="aijob home" className="flex shrink-0 items-center">
+            <Link href="/" aria-label="Joby home" className="flex shrink-0 items-center">
               <Brand size={30} />
             </Link>
             <div className="hidden items-center gap-6 md:flex">
@@ -156,14 +156,14 @@ export default function Home() {
               <span className="size-2.5 rounded-full bg-foreground/15" />
               <span className="size-2.5 rounded-full bg-foreground/15" />
               <span className="size-2.5 rounded-full bg-foreground/15" />
-              <span className="ml-3 truncate text-xs text-muted-foreground">app.aijob.dev / candidates</span>
+              <span className="ml-3 truncate text-xs text-muted-foreground">app.joby.dev / candidates</span>
               <Badge variant="outline" className="ml-auto hidden text-[10px] sm:inline-flex">Preview</Badge>
             </div>
             <div className="flex min-h-80">
               <aside className="hidden w-36 shrink-0 flex-col gap-1 border-r bg-muted/25 p-3 sm:flex">
                 <div className="flex items-center gap-2 px-2 py-2">
                   <Logo size={18} />
-                  <span className="text-xs font-semibold">aijob</span>
+                  <span className="text-xs font-semibold">Joby</span>
                 </div>
                 <Separator className="my-2" />
                 {[
@@ -267,7 +267,7 @@ export default function Home() {
             <p className="text-xs font-medium uppercase tracking-widest text-muted-foreground">Why evidence</p>
             <h2 className="mt-3 text-3xl font-semibold sm:text-4xl">A score means more when you can read the proof.</h2>
             <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-              aijob stores the exact excerpt behind every match and checks that generated claims
+              Joby stores the exact excerpt behind every match and checks that generated claims
               come from confirmed source text. Unsupported statements are flagged for review,
               never presented as fact.
             </p>
@@ -345,7 +345,7 @@ export default function Home() {
           </div>
           <Separator className="my-8" />
           <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-            <span>© 2026 aijob.</span>
+            <span>© 2026 Joby.</span>
             <span className="flex items-center gap-1.5"><ShieldCheck className="size-3.5" /> Scoped, auditable workspaces</span>
           </div>
         </div>
